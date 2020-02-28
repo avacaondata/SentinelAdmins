@@ -1,4 +1,5 @@
 import pandas as pd 
+import numpy as np
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 ##### variables que se distribuyen "raro": 
@@ -23,11 +24,43 @@ categorical = [53, 54]
 minmax = MinMaxScaler()
 stdscaler = StandardScaler()
 
-def preprocess_data(f):
+def preprocess_data(f, scale=True, scaler = 'std', process_cat = False, y_name='CLASE'):
     """
     takes a file name and returns the processed dataset
+    
+    Parameters
+    -------------
+    f
+        the filename
+    scale
+        whether to scale the numerical variables
+    scaler
+        which scaler to use for numerical variables
+    process_cat
+        whether to do one-hot encoding for categorical, as some models like catboost don't want them one-hot.
+    y_name
+        name of the variable where the objective is.
+    
+    Returns
+    -------------
+    X
+        The matrix with features
+    y
+        The vector with objective variable
     """
     df = pd.read_csv(f, sep='|')
-    pass
-
-
+    y = df['CLASE'].values
+    X = df.drop(['CLASE', 'id'], axis = 1)
+    if process_cat:
+        X = pd.get_dummies(X, columns = df.columns[categorical])
+    X = np.array(X)
+    select_columns = [i for i in range(X.shape[1]) if i != categorical]
+    # en caso de que lo veas bien, mete aquí transformaciones del tipo X[:, var] = np.log1p(X[:, var]),
+    # antes de escalar
+    if scale:
+        if scaler == 'std':
+            X[:, select_columns] = stdscaler.fit_transform(X[:, select_columns])
+        elif scaler == 'minmax':
+            X[:, select_columns] = minmax.fit_transform(X[:, select_columns])
+    
+    return X, y
