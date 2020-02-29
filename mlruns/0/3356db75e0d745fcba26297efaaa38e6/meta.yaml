@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/alejandrovaca/Documents/SentinelAdmins/mlruns/0/3356db75e0d745fcba26297efaaa38e6/artifacts
+end_time: 1583011107939
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+name: ''
+run_id: 3356db75e0d745fcba26297efaaa38e6
+run_uuid: 3356db75e0d745fcba26297efaaa38e6
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1583009847831
+status: 3
+tags: []
+user_id: alejandrovaca

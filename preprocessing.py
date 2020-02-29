@@ -24,7 +24,17 @@ categorical = [53, 54]
 minmax = MinMaxScaler()
 stdscaler = StandardScaler()
 
-def preprocess_data(f, scale=True, scaler = 'std', process_cat = False, y_name='CLASE'):
+def process_categorical(df, cat_columns):
+    for col in cat_columns:
+        set_ = [l for l in set(df[col])]
+        dic_ = {l:i for i, l in enumerate(set_)}
+        #print(f'El diccionario de categorías es {dic_clase}')
+        for i in range(df.shape[0]):
+            df[col].iloc[i] = dic_[df[col].iloc[i]]
+    return df
+    
+
+def preprocess_data(f, scale=True, scaler = 'std', process_cat = False, y_name='CLASE', sample_trials=None):
     """
     takes a file name and returns the processed dataset
     
@@ -49,14 +59,25 @@ def preprocess_data(f, scale=True, scaler = 'std', process_cat = False, y_name='
         The vector with objective variable
     """
     df = pd.read_csv(f, sep='|')
+    if sample_trials is not None:
+        df = df.sample(sample_trials)
+    set_clase = [l for l in set(df['CLASE'])]
+    dic_clase = {l:i for i, l in enumerate(set_clase)}
+    print(f'El diccionario de categorías es {dic_clase}')
+    for i in range(df.shape[0]):
+        df['CLASE'].iloc[i] = dic_clase[df['CLASE'].iloc[i]]
     y = df['CLASE'].values
-    X = df.drop(['CLASE', 'id'], axis = 1)
+    X = df.drop(['CLASE', 'ID'], axis = 1)
     if process_cat:
-        X = pd.get_dummies(X, columns = df.columns[categorical])
-    X = np.array(X)
-    select_columns = [i for i in range(X.shape[1]) if i != categorical]
+        X = pd.get_dummies(X, columns = df.columns[categorical])  
+    select_columns = X.dtypes!=object
+    
+    #select_columns = [i for i in range(X.shape[1]) if i != categorical]
     # en caso de que lo veas bien, mete aquí transformaciones del tipo X[:, var] = np.log1p(X[:, var]),
     # antes de escalar
+    if not process_cat:
+        X = process_categorical(X, X.columns[X.dtypes == object])
+    X = np.array(X)                                   
     if scale:
         if scaler == 'std':
             X[:, select_columns] = stdscaler.fit_transform(X[:, select_columns])
