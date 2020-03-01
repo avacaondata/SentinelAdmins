@@ -1,7 +1,7 @@
 from sklearn.ensemble import RandomForestClassifier
 from preprocessing import *
 from sklearn.metrics import roc_auc_score, classification_report, confusion_matrix
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, StratifiedKFold
 import mlflow
 import mlflow.sklearn
 import mlflow.tracking
@@ -13,18 +13,34 @@ from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_sc
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-NAME = 'rf_100BS'
-N_ITER = 100
-
+NAME = 'xgb_40BS'
+N_ITER = 300
+cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
+'''
 params = {'n_estimators': (100, 1500),
             'max_depth': (2, 10),
             'class_weight': ['balanced'],
             'n_jobs': [-1],
             'max_features': ['auto', 'log2'],
             }
+'''
 
-model = RandomForestClassifier()
-
+params = {
+        'learning_rate': (0.001, 1.0, 'log-uniform'),
+        'min_child_weight': (0, 10),
+        'max_depth': (2, 10),
+        'max_delta_step': (1, 20),
+        'subsample': (0.01, 1.0, 'uniform'),
+        'colsample_bytree': (0.01, 1.0, 'uniform'),
+        'colsample_bylevel': (0.01, 1.0, 'uniform'),
+        'reg_lambda': (1e-9, 1000., 'log-uniform'),
+        'reg_alpha': (1e-9, 10.0, 'log-uniform'),
+        'gamma': (1e-9, 1.0, 'log-uniform'),
+        'n_estimators': (100, 1000),
+        'scale_pos_weight': (1e-6, 500., 'log-uniform')
+    }
+#model = RandomForestClassifier()
+model = XGBClassifier(eval_metric = 'auc', n_jobs=-1, objective='multi:softmax', num_class=7)
 
 def print_confusion_matrix(confusion_matrix, class_names, figsize = (10,7), fontsize=14, normalize=True):
     """Prints a confusion matrix, as returned by sklearn.metrics.confusion_matrix, as a heatmap.
@@ -71,9 +87,9 @@ def print_confusion_matrix(confusion_matrix, class_names, figsize = (10,7), font
 def main():
     mlflow.start_run(run_name=NAME)
     print('procesando los datos')
-    X, y = preprocess_data('Modelar_UH2020.txt', process_cat=True)
+    X, y = preprocess_data('Modelar_UH2020.txt', process_cat=True, sample_trials=20000)
     y=y.astype('int')
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.10, random_state=42, stratify=y)
     setlabs = [l for l in set(y_train)]
     tag2idx = {i: l for l, i in enumerate(setlabs)}
 
@@ -81,13 +97,21 @@ def main():
                 model,
                 params,
                 n_iter = N_ITER,
-                cv=3,
+                n_points=4,
+                cv=cv,
                 scoring='f1_macro',
                 random_state=42,
                 )
 
     def on_step(optim_result):
         score = best_model.best_score_
+        results = best_model.cv_results_
+        try:
+            results_df = pd.DataFrame(results)
+            print(f'############ Llevamos {results_df.shape[0]} pruebas #################')
+            print(f'los resultados del cv de momento son {results_df}')
+        except:
+            print('Unable to convert cv results to pandas dataframe')
         mlflow.log_metric('best_score', score)
         print("best score: %s" % score)
         if score >= 0.98:
