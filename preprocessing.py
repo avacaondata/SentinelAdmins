@@ -108,6 +108,7 @@ def preprocess_data(f, scale=True, scaler = 'std', process_cat = False, y_name='
     X['y_rot_180'] = y_rot_180
     X['lat_2'] = X.X **2
     X['lon_2'] = X.Y **2
+    X['latxlon'] = X.X * X.Y
     
     ############ VARIABLES GEOM Y AREA #########################
     #X['area_2'] = X.AREA ** 2
