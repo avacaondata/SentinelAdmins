@@ -5,8 +5,8 @@ channels:
   - pytorch
 dependencies:
   - python=3.7
-  # - cudatoolkit
-  # - cudnn=7.6.5
+  - cudatoolkit
+  - cudnn=7.6.5
   - jupyter=1.0.0
   - nb_conda=2.2.1
   - scikit-learn=0.22.1
@@ -19,3 +19,5 @@ dependencies:
   - catboost 
   - matplotlib
   - seaborn
+pip:
+  - mlflow

@@ -76,6 +76,10 @@ def preprocess_data(f, scale=True, scaler = 'std', process_cat = False, y_name='
     # en caso de que lo veas bien, mete aquí transformaciones del tipo X[:, var] = np.log1p(X[:, var]),
     # antes de escalar
     if not process_cat:
+        categoricas = []
+        for i in range(X.shape[1]):
+            if X.dtypes[i] == object:
+                categoricas.append(i)
         X = process_categorical(X, X.columns[X.dtypes == object])
     X = np.array(X)                                   
     if scale:
@@ -83,5 +87,7 @@ def preprocess_data(f, scale=True, scaler = 'std', process_cat = False, y_name='
             X[:, select_columns] = stdscaler.fit_transform(X[:, select_columns])
         elif scaler == 'minmax':
             X[:, select_columns] = minmax.fit_transform(X[:, select_columns])
-    
-    return X, y
+    if not process_cat:
+        return X, y, categoricas
+    else:
+        return X, y
