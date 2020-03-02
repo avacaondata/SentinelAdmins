@@ -45,12 +45,13 @@ params = {
 '''
 params = {
         'depth':(2,10),
-        'learning_rate': (1e-7, 1e-1),
-        'reg_lambda': (1e-7, 10.0),
+        'iterations': (100, 1200),
+        #'learning_rate': (1e-7, 1e-1),
+        #'reg_lambda': (1e-7, 10.0),
         'l2_leaf_reg':(1, 500),
         'bagging_temperature':(1e-9, 1000., 'log-uniform'),
         'border_count':(1,255),
-        'rsm':(0.01, 1.0, 'uniform'),
+        'rsm':(0.10, 1.0, 'uniform'),
         'random_strength':(1e-9, 10., 'log-uniform'),
     }
 
@@ -108,22 +109,24 @@ def main():
     mlflow.start_run(run_name=NAME)
     print('procesando los datos')
     X, y, categoricas = preprocess_data('Modelar_UH2020.txt', process_cat=False)
+    print(X.shape)
+    print(categoricas)
     y=y.astype('int')
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.10, random_state=42, stratify=y)
     setlabs = [l for l in set(y_train)]
     tag2idx = {i: l for l, i in enumerate(setlabs)}
-    
+
     cw = list(class_weight.compute_class_weight('balanced',
                                              get_classes_order_catboost(X_train, y_train),
                                              y_train))
 
-    model = CatBoostClassifier(silent=True, loss_function='MultiClass', cat_features=categorical, class_weights=cw, plot=True)
+    model = CatBoostClassifier(silent=True, loss_function='MultiClass', cat_features=categoricas, class_weights=cw, boosting_type='Plain', max_ctr_complexity=2)
     
     best_model = BayesSearchCV(
                 model,
                 params,
                 n_iter = N_ITER,
-                n_points=20,
+                n_points=40,
                 cv=cv,
                 scoring='f1_macro',
                 random_state=42,
@@ -144,10 +147,11 @@ def main():
             print('Interrupting!')
             return True
 
+    '''
     counter=0
 
     def status(res):
-        global counter
+        #global counter
         args = res.x
         x0 = res.x_iters
         y0 = res.func_vals
@@ -157,10 +161,11 @@ def main():
             ' - Score ', res.fun, 
             ' - Args: ', args)
         #joblib.dump((x0, y0), 'checkpoint.pkl')
-        counter = counter+1
+        counter += 1
+    '''
 
     print('ajustando modelo')
-    best_model.fit(X_train, y_train, callback=[on_step, status])
+    best_model.fit(X_train, y_train, callback=[on_step])
     with open(f'best_{NAME}_model.pkl', 'wb') as f:
         pickle.dump(best_model, f)
     print('loggeando movidas')
