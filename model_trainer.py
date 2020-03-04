@@ -12,12 +12,12 @@ import pickle
 from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
 import matplotlib.pyplot as plt
 import seaborn as sns
-
+import os
 from sklearn.utils import class_weight
 
 
-NAME = 'catboost_120BS'
-N_ITER = 120
+NAME = 'catboost_120BS_2'
+N_ITER = 200
 cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
 '''
 params = {'n_estimators': (100, 1500),
@@ -44,15 +44,15 @@ params = {
     }
 '''
 params = {
-        'depth':(2,10),
-        'iterations': (100, 1200),
+        'depth':(6,12),
+        'iterations': (1000, 1600),
         #'learning_rate': (1e-7, 1e-1),
-        #'reg_lambda': (1e-7, 10.0),
-        'l2_leaf_reg':(1, 500),
-        'bagging_temperature':(1e-9, 1000., 'log-uniform'),
+        'reg_lambda': (1e-5, 10.0),
+        #'l2_leaf_reg':(0.1, 100.),
+        'bagging_temperature':(1e-8, 1., 'log-uniform'),
         'border_count':(1,255),
-        'rsm':(0.10, 1.0, 'uniform'),
-        'random_strength':(1e-9, 10., 'log-uniform'),
+        #'rsm':(0.10, 0.8, 'uniform'),
+        'random_strength':(1e-3, 3.0, 'log-uniform'),
     }
 
 #model = RandomForestClassifier()
@@ -112,7 +112,26 @@ def main():
     print(X.shape)
     print(categoricas)
     y=y.astype('int')
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.10, random_state=42, stratify=y)
+    if 'X_train.pkl' not in os.listdir():
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.10, random_state=42, stratify=y)
+        with open('X_train.pkl', 'wb') as f:
+            pickle.dump(X_train, f)
+        with open('X_test.pkl', 'wb') as f:
+            pickle.dump(X_test, f)
+        with open('y_train.pkl', 'wb') as f:
+            pickle.dump(y_train, f)
+        with open('y_test.pkl', 'wb') as f:
+            pickle.dump(y_test, f)
+    else:
+        with open('X_train.pkl', 'rb') as f:
+            X_train = pickle.load(f)
+        with open('X_test.pkl', 'rb') as f:
+            X_test = pickle.load(f)
+        with open('y_train.pkl', 'rb') as f:
+            y_train = pickle.load(f)
+        with open('y_test.pkl', 'rb') as f:
+            y_test = pickle.load(f)
+    
     setlabs = [l for l in set(y_train)]
     tag2idx = {i: l for l, i in enumerate(setlabs)}
 
@@ -120,13 +139,14 @@ def main():
                                              get_classes_order_catboost(X_train, y_train),
                                              y_train))
 
-    model = CatBoostClassifier(silent=True, loss_function='MultiClass', cat_features=categoricas, class_weights=cw, boosting_type='Plain', max_ctr_complexity=2)
+    model = CatBoostClassifier(silent=True, loss_function='MultiClass', cat_features=categoricas, class_weights=cw, boosting_type='Plain', max_ctr_complexity=2, task_type="GPU",
+                           devices='0:1')
     
     best_model = BayesSearchCV(
                 model,
                 params,
                 n_iter = N_ITER,
-                n_points=40,
+                n_points=10,
                 cv=cv,
                 scoring='f1_macro',
                 random_state=42,
@@ -135,13 +155,17 @@ def main():
     def on_step(optim_result):
         score = best_model.best_score_
         results = best_model.cv_results_
+        #preds = best_model.predict(X_test)
         try:
             results_df = pd.DataFrame(results)
+            results_df.to_csv(f'results_{NAME}.csv', header=True, index=False)
             print(f'############ Llevamos {results_df.shape[0]} pruebas #################')
             print(f'los resultados del cv de momento son {results_df}')
         except:
             print('Unable to convert cv results to pandas dataframe')
         mlflow.log_metric('best_score', score)
+        with open(f'./best_{NAME}_params.pkl', 'wb') as f:
+            pickle.dump(best_model.best_params_, f)
         print("best score: %s" % score)
         if score >= 0.98:
             print('Interrupting!')
@@ -166,10 +190,14 @@ def main():
 
     print('ajustando modelo')
     best_model.fit(X_train, y_train, callback=[on_step])
-    with open(f'best_{NAME}_model.pkl', 'wb') as f:
+    with open(f'./best_{NAME}_model.pkl', 'wb') as f:
         pickle.dump(best_model, f)
     print('loggeando movidas')
-    mlflow.log_artifact('best_rf_model.pkl')
+    #mlflow.log_artifact(f'./best_{NAME}_model.pkl')
+    mlflow.log_metrics(metrics={'f1': f1_score(y_test, preds, average='macro'),
+                           'precision': precision_score(y_test, preds, average='macro'),
+                           'recall': recall_score(y_test, preds, average='macro'),
+                           'accuracy': accuracy_score(y_test, preds)})
     best_params = best_model.best_params_
     for param in best_params.keys():
          mlflow.log_param(param, best_params[param])
@@ -180,13 +208,10 @@ def main():
     grafico_conf_matrix.savefig(NAME)
     grafico_norm = print_confusion_matrix(cm, class_names = setlabs, normalize=False)
     grafico_norm.savefig(f'{NAME}_no_norm')
-    mlflow.log_metrics(metrics={'f1': f1_score(y_test, preds, average='macro'),
-                           'precision': precision_score(y_test, preds, average='macro'),
-                           'recall': recall_score(y_test, preds, average='macro'),
-                           'accuracy': accuracy_score(y_test, preds)})
+    
     mlflow.log_artifact(f'./{NAME}.png')
     mlflow.log_artifact(f'./{NAME}_no_norm.png')
-    mlflow.sklearn.log_model(best_model.best_estimator_, 'random_forest_model')
+    #mlflow.sklearn.log_model(best_model.best_estimator_, 'random_forest_model')
     mlflow.end_run()
 
 

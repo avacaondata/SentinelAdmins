@@ -21,3 +21,4 @@ dependencies:
   - seaborn
 pip:
   - mlflow
+  - imbalanced-learn

@@ -31,6 +31,7 @@ def process_categorical(df, cat_columns):
         #print(f'El diccionario de categorías es {dic_clase}')
         for i in range(df.shape[0]):
             df[col].iloc[i] = dic_[df[col].iloc[i]]
+        df[col] = df[col].astype('category')
     return df
 
 
@@ -41,6 +42,7 @@ def rotate(p, origin=(0, 0), degrees=0):
     o = np.atleast_2d(origin)
     p = np.atleast_2d(p)
     return np.squeeze((R @ (p.T-o.T) + o.T).T)
+
 
 def three_dim_space(lat, lon):
     x = np.cos(lat) * np.cos(lon)
@@ -123,6 +125,7 @@ def preprocess_data(f, scale=True, scaler = 'std', process_cat = False, y_name='
             if X.dtypes[i] == object:
                 categoricas.append(i)
         X = process_categorical(X, X.columns[X.dtypes == object])
+        
     colnames = X.columns
     X = np.array(X)                                   
     if scale:
