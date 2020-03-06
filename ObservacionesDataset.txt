@@ -1,0 +1,8 @@
+### Observaciones Variables Dataset
+
+-ID:
+No hay duplicados
+Casi todos los IDs son de 16 letras, pero hay 389 con 14 letras y 3 con 12 letras
+PERO la longitud de los IDs no tiene nada que ver con la CLASE:
+	df.iloc[np.where(df.ID.str.len() == 12 | df.ID.str.len() == 14)].CLASE.value_counts())
+
