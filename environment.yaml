@@ -13,12 +13,13 @@ dependencies:
   - pip=19.2.3
   - pytorch=1.4.0
   - tqdm=4.36.1
-  - xgboost
   - scikit-optimize
   - lightgbm
   - catboost 
   - matplotlib
   - seaborn
-pip:
-  - mlflow
-  - imbalanced-learn
+  - pip
+  - pip:
+    - mlflow
+    - xgboost
+    - imbalanced-learn
