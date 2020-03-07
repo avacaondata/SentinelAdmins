@@ -3,3 +3,6 @@
 ./catboost_info/
 *.png
 *.pkl
+*.DS_Store
+*checkpoint.ipynb
+./folder
