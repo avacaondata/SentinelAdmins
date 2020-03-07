@@ -1,0 +1,233 @@
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/catboost/core.py:5: DeprecationWarning: the imp module is deprecated in favour of importlib; see the module's documentation for alternative uses
+  import imp
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/imp.py:342: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3,and in 3.9 it will stop working
+  return _load(spec)
+procesando los datos
+El diccionario de categorías es {'INDUSTRIAL': 0, 'OTHER': 1, 'PUBLIC': 2, 'AGRICULTURE': 3, 'OFFICE': 4, 'RETAIL': 5, 'RESIDENTIAL': 6}
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/pandas/core/indexing.py:670: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  self._setitem_with_indexer(indexer, value)
+ajustando modelo
+best score: 0.3245692365998809
+best score: 0.368846475800348
+best score: 0.3692813676778356
+best score: 0.3692813676778356
+best score: 0.3692813676778356
+best score: 0.3927526013521558
+best score: 0.3927526013521558
+best score: 0.3927526013521558
+best score: 0.3927526013521558
+best score: 0.3927526013521558
+best score: 0.393359319193974
+best score: 0.39520978124262673
+best score: 0.39520978124262673
+best score: 0.39520978124262673
+best score: 0.39520978124262673
+best score: 0.39520978124262673
+best score: 0.39520978124262673
+best score: 0.39520978124262673
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39520978124262673
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39520978124262673
+best score: 0.39520978124262673
+best score: 0.39520978124262673
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39520978124262673
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39520978124262673
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39520978124262673
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39520978124262673
+best score: 0.39520978124262673
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39520978124262673
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39520978124262673
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39520978124262673
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39520978124262673
+best score: 0.39520978124262673
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39520978124262673
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39520978124262673
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39520978124262673
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39520978124262673
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39520978124262673
+best score: 0.39520978124262673
+best score: 0.39520978124262673
+best score: 0.39520978124262673
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39520978124262673
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39520978124262673
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39520978124262673
+best score: 0.39520978124262673
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39520978124262673
+best score: 0.39520978124262673
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39520978124262673
+best score: 0.39520978124262673
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39520978124262673
+best score: 0.39520978124262673
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39520978124262673
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39520978124262673
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39520978124262673
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39520978124262673
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39520978124262673
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39529001515733453
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39529001515733453
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39529001515733453
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39529001515733453
+best score: 0.39529001515733453
+best score: 0.39529001515733453
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39529001515733453
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39529001515733453
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39529001515733453
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39529001515733453
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39529001515733453
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39529001515733453
+best score: 0.39529001515733453
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39529001515733453
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39539882618667604
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39539882618667604
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39539882618667604
+best score: 0.39539882618667604
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39539882618667604
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39539882618667604
+best score: 0.39539882618667604
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39539882618667604
+best score: 0.39539882618667604
+best score: 0.39539882618667604
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39539882618667604
+best score: 0.39539882618667604
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39539882618667604
+best score: 0.39539882618667604
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39539882618667604
+best score: 0.39539882618667604
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39539882618667604
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39602969127809484
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39602969127809484
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39602969127809484
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39602969127809484
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39602969127809484
+best score: 0.39602969127809484
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39602969127809484
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39602969127809484
+best score: 0.39602969127809484
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39602969127809484
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39602969127809484
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39602969127809484
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39602969127809484
+/Users/alejandrovaca/anaconda3/envs/sentinel_env/lib/python3.7/site-packages/skopt/optimizer/optimizer.py:409: UserWarning: The objective has been evaluated at this point before.
+  warnings.warn("The objective has been evaluated "
+best score: 0.39602969127809484
+loggeando movidas
+Normalized confusion matrix
+Confusion matrix, without normalization

@@ -69,13 +69,28 @@ leaflet(data = df) %>%
 
 
 # # Esto mejora un poquitín el mapa, pero hay que ver si vale la pena
-puntos_identificados$Fila2 <- ifelse(165724537<puntos_identificados$Y, 1,0)
+puntos_identificados$Sur <- ifelse(165724537<puntos_identificados$Y, 1,0)
 
 df$Sur <- ifelse(165724537<df$Y, 1,0)
 
 model_lat <- lm(Lat ~ Y + Sur, data = puntos_identificados)
+model_lon <- lm(Lon ~ X + Sur, data = puntos_identificados)
+summary(model_lon)
 summary(model_lat)
 df$lat <- predict.lm(model_lat, df)
+df$lon <- predict.lm(model_lon, df)
 leaflet(data = df) %>%
   addTiles(urlTemplate = 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png') %>%
   addCircles(~lon, ~lat, radius = 0.3, fillOpacity = 0.03)
+
+
+df$Sur = NULL
+write.csv(df, 'dataset_train.csv')
+
+
+
+
+
+
+
+
