@@ -1,0 +1,6 @@
+*.txt
+./mlruns/
+./catboost_info/
+*.png
+*.pkl
+.ipynb_checkpoints
