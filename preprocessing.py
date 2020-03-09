@@ -131,10 +131,8 @@ def preprocess_data(f, scale=True, scaler = 'std', process_cat = False, y_name='
     X['lat_2'] = X.X **2
     X['lon_2'] = X.Y **2
     X['latxlon'] = X.X * X.Y
-    
     ############ VARIABLES GEOM Y AREA #########################
     #X['area_2'] = X.AREA ** 2
-    
     #select_columns = [i for i in range(X.shape[1]) if i != categorical]
     # en caso de que lo veas bien, mete aquí transformaciones del tipo X[:, var] = np.log1p(X[:, var]),
     # antes de escalar
@@ -144,9 +142,7 @@ def preprocess_data(f, scale=True, scaler = 'std', process_cat = False, y_name='
         for i in range(X.shape[1]):
             if X.dtypes[i] == object:
                 categoricas.append(i)
-        
         X = process_categorical(X, X.columns[X.dtypes == object])
-        
     colnames = X.columns
     X = np.array(X)                                   
     if scale:
