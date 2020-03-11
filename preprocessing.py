@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from missingpy import MissForest
+import pickle
 imputer = MissForest()
 #X_imputed = imputer.fit_transform(X)
 
@@ -63,7 +64,52 @@ def three_dim_space(lat, lon):
     y = np.cos(lat) * np.sin(lon)
     z = np.sin(lat)
     return x, y, z
+
+
+def partial_preprocess_train(f, scale=True, scaler = 'std', process_cat = False, y_name='CLASE', sample_trials=None):
+    """
+    takes a file name and returns the processed dataset
     
+    Parameters
+    -------------
+    f
+        the filename
+    scale
+        whether to scale the numerical variables
+    scaler
+        which scaler to use for numerical variables
+    process_cat
+        whether to do one-hot encoding for categorical, as some models like catboost don't want them one-hot.
+    y_name
+        name of the variable where the objective is.
+    sample_trials
+        number of samples to take, if None, full data is returned.
+    
+    Returns
+    -------------
+    X
+        The matrix with features
+    y
+        The vector with objective variable
+    """
+    df = pd.read_csv(f)
+    if sample_trials is not None:
+        df = df.sample(sample_trials)
+    set_clase = [l for l in set(df['CLASE'])]
+    dic_clase = {l:i for i, l in enumerate(set_clase)}
+    for i in range(df.shape[0]):
+        df['CLASE'].iloc[i] = dic_clase[df['CLASE'].iloc[i]]
+    y = df['CLASE'].values
+    X = df.drop(['CLASE', 'ID', 'lat', 'lon'], axis = 1)
+    X.CADASTRALQUALITYID = X.CADASTRALQUALITYID.astype('str')
+    X = process_cadqual(X)
+    #X.MAXBUILDINGFLOOR = X.MAXBUILDINGFLOOR.astype('str')
+    X.cluster = X.cluster.astype('str')
+    if process_cat:
+        X = pd.get_dummies(X, columns = X.columns[X.dtypes == object])
+    cols = X.columns
+    return X
+
 
 def preprocess_data(f, scale=True, scaler = 'std', process_cat = False, y_name='CLASE', sample_trials=None):
     """
@@ -115,7 +161,10 @@ def preprocess_data(f, scale=True, scaler = 'std', process_cat = False, y_name='
     print(f'En momento 3 el shape es de {X.shape}')
     print('Imputando valores con Random Forest')
     cols = X.columns
-    X = imputer.fit_transform(X)
+    imputer.fit(X)
+    X = imputer.transform(X)
+    with open('imputer.pkl', 'wb') as f:
+        pickle.dump(imputer, f)
     print(f'En momento 4 el shape es de {X.shape}')
     X = pd.DataFrame(X, columns=cols)
     ########## HERE I TREAT LAT AND LON ########################
@@ -162,4 +211,110 @@ def preprocess_data(f, scale=True, scaler = 'std', process_cat = False, y_name='
     if not process_cat:
         return pd.DataFrame(X, columns=colnames), y, categoricas
     else:
-        return pd.DataFrame(X, columns=colnames), y
+        return pd.DataFrame(X, columns=colnames), y, dic_clase
+    
+    
+def preprocess_test(f, scale=True, scaler = 'std', process_cat = False, sample_trials=None):
+    """
+    takes a file name and returns the processed dataset
+    
+    Parameters
+    -------------
+    f
+        the filename
+    scale
+        whether to scale the numerical variables
+    scaler
+        which scaler to use for numerical variables
+    process_cat
+        whether to do one-hot encoding for categorical, as some models like catboost don't want them one-hot.
+    y_name
+        name of the variable where the objective is.
+    sample_trials
+        number of samples to take, if None, full data is returned.
+    
+    Returns
+    -------------
+    X
+        The matrix with features
+    y
+        The vector with objective variable
+    """
+    df = pd.read_csv(f)
+    if sample_trials is not None:
+        df = df.sample(sample_trials)
+    #set_clase = [l for l in set(df['CLASE'])]
+    #dic_clase = {l:i for i, l in enumerate(set_clase)}
+    print(f'En momento 1 el shape es {df.shape}')
+    X = df.drop(['ID', 'lat', 'lon'], axis = 1)
+    print(f"Valores unicos de CADASTRAL--- {X.CADASTRALQUALITYID.unique()}")
+    X.CADASTRALQUALITYID = X.CADASTRALQUALITYID.astype('str')
+    X = process_cadqual(X)
+    print(f'En momento 2 el shape es de {X.shape}')
+    #X.MAXBUILDINGFLOOR = X.MAXBUILDINGFLOOR.astype('str')
+    X.cluster = X.cluster.astype('str')
+    print(f"Las columnas que tienen dtype object son {X.columns[X.dtypes == object]}")
+    if process_cat:
+        X = pd.get_dummies(X, columns = X.columns[X.dtypes == object])
+    print(f'En momento 3 el shape es de {X.shape}')
+    print('Imputando valores con Random Forest')
+    cols = X.columns
+    X_train = partial_preprocess_train('TOTAL_TRAIN.csv', scale=True, scaler = 'std', process_cat = True, y_name='CLASE')
+    '''
+    with open('imputer.pkl', 'rb') as f:
+        imputer = pickle.load(f)
+    '''
+    try:
+        imputer.fit(X_train)
+        X = imputer.transform(X)
+    except Exception as e:
+        print(e)
+        X = imputer.fit_transform(X)
+    print(f'En momento 4 el shape es de {X.shape}')
+    X = pd.DataFrame(X, columns=cols)
+    ########## HERE I TREAT LAT AND LON ########################
+    geo_x, geo_y, geo_z = three_dim_space(X.X, X.Y)
+    X['GEO_X'] = geo_x
+    X['GEO_Y'] = geo_y
+    X['GEO_Z'] = geo_z
+    points = [(x, y) for x, y in zip(X.X, X.Y)]
+    origin = (X.X.mean(), X.Y.mean())
+    rotated90=rotate(points, origin, degrees=90)
+    rotated180=rotate(points, origin, degrees=180)
+    x_rot_90 = [r[0] for r in rotated90]
+    y_rot_90 = [r[1] for r in rotated90]
+    x_rot_180 = [r[0] for r in rotated180]
+    y_rot_180 = [r[1] for r in rotated180]
+    X['x_rot_90'] = x_rot_90
+    X['y_rot_90'] = y_rot_90
+    X['x_rot_180'] = x_rot_180
+    X['y_rot_180'] = y_rot_180
+    X['lat_2'] = X.X **2
+    X['lon_2'] = X.Y **2
+    X['latxlon'] = X.X * X.Y
+    print(f'En momento 5 el shape es de {X.shape}')
+    ############ VARIABLES GEOM Y AREA #########################
+    #X['area_2'] = X.AREA ** 2
+    #select_columns = [i for i in range(X.shape[1]) if i != categorical]
+    # en caso de que lo veas bien, mete aquí transformaciones del tipo X[:, var] = np.log1p(X[:, var]),
+    # antes de escalar
+    select_columns = X.dtypes!=object
+    if not process_cat:
+        categoricas = []
+        for i in range(X.shape[1]):
+            if X.dtypes[i] == object:
+                categoricas.append(i)
+        X = process_categorical(X, X.columns[X.dtypes == object])
+    colnames = X.columns
+    X = np.array(X)                                   
+    if scale:
+        if scaler == 'std':
+            X[:, select_columns] = stdscaler.fit_transform(X[:, select_columns])
+        elif scaler == 'minmax':
+            X[:, select_columns] = minmax.fit_transform(X[:, select_columns])
+        print(f'En momento 6 el shape es de {X.shape}')
+    if not process_cat:
+        return pd.DataFrame(X, columns=colnames)
+    else:
+        return pd.DataFrame(X, columns=colnames)
+

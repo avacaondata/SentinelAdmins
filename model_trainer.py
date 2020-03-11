@@ -21,8 +21,8 @@ from imblearn.pipeline import Pipeline
 from collections import Counter
 from imblearn.pipeline import Pipeline
 
-NAME = 'lightgbm_geovars_10_03'
-N_ITER = 40
+NAME = 'lightgbm_geovars_11_03'
+N_ITER = 50
 cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=100)
 
 '''
@@ -37,8 +37,8 @@ params = {'n_estimators': (100, 1500),
 
 params = {'model__reg_alpha': (1e-2, 2.0, 'log-uniform'),
           'model__reg_lambda': (1e-2, 20.0, 'log-uniform'),
-          'model__n_estimators': (500, 1500),
-          'model__learning_rate': (5e-4, 1.0, 'log-uniform')}
+          'model__n_estimators': (1000, 2000),
+          'model__learning_rate': (5e-3, 1.0, 'log-uniform')}
 
 
 '''
@@ -128,7 +128,7 @@ def get_classes_order_catboost(X_train, y_train):
 def main():
     mlflow.start_run(run_name=NAME)
     print('procesando los datos')
-    X, y = preprocess_data('TOTAL_TRAIN.csv', process_cat=True)
+    X, y, tag2idx = preprocess_data('TOTAL_TRAIN.csv', process_cat=True)
     print(f"##################### The shape of X is {X.shape} #######################")
     y=y.astype('int')
     
@@ -146,7 +146,8 @@ def main():
             y_test = pickle.load(f)
     
     X = X.astype('float')
-
+    print(X.shape)
+    print(X_train.shape)
     counter = Counter(y_train)
     maximo = 0
     for k, v in dict(counter).items():
@@ -155,9 +156,13 @@ def main():
             llave = k
         else:
             continue
-
-    over = SMOTE(sampling_strategy={k:int(v*20*(2/3)) for k, v in dict(counter).items()
-                                if k != llave})
+    
+    dic_smote = {k:int(v*20*(2/3)) for k, v in dict(counter).items()
+                                if k != llave}
+    print(dic_smote)
+    dic_smote[tag2idx['OFFICE']] = int(dic_smote[tag2idx['OFFICE']]*1.7)
+    over = SMOTE(sampling_strategy=dic_smote)
+    
     under = RandomUnderSampler(sampling_strategy={k:int(v*0.95*(2/3)) for k, v in dict(counter).items()
                                if k == llave})
 
@@ -170,9 +175,11 @@ def main():
     with open('y_test.pkl', 'wb') as f:
         pickle.dump(y_test, f)
 
-    setlabs = [l for l in set(y_train)]
-    tag2idx = {i: l for l, i in enumerate(setlabs)}
+    #setlabs = [l for l in set(y_train)]
+    #tag2idx = {i: l for l, i in enumerate(setlabs)}
     print(f"tag2idx is {tag2idx}")
+    with open(f"tag2idx_{NAME}.pkl", "wb") as f:
+        pickle.dump(tag2idx, f)
     '''
     pipe_imb = Pipeline([('o', over), ('u', under)])
     X_train_resam = pd.get_dummies(X_train, columns = X_train.columns[categoricas])
@@ -191,6 +198,23 @@ def main():
     steps = [('o', over), ('u', under), ('model', model)]
     pipeline = Pipeline(steps)
     
+    with open('best_lightgbm_geovars_10_03_params.pkl', 'rb') as f:
+        params_probar_primero = pickle.load(f)
+    
+    nuevo_dic = {}
+    
+    for k in params_probar_primero.keys():
+        k_ = k.replace('model__', '')
+        nuevo_dic[k_] = params_probar_primero[k]
+    
+    pipeline_prueba = Pipeline([('o', over), 
+                       ('u', under), 
+                       ('model', LGBMClassifier(class_weight='balanced', objective='multiclass:softmax', n_jobs=-1, **nuevo_dic))])
+    
+    pipeline_prueba.fit(X_train, y_train)
+    preds_pipeline_prueba = pipeline_prueba.predict(X_test)
+    print(f"Resultado pipeline prueba: {f1_score(y_test, preds_pipeline_prueba, average='macro')}")
+    #print(f"Score is {pipeline_prueba.score(y_test, X_test)}")
     best_model = BayesSearchCV(
                 pipeline,
                 params,

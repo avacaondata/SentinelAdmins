@@ -1,27 +1,16 @@
-import geopandas as gpd
-from shapely.geometry import Point
-from pyproj import Proj
-#import pgeocode
-import pandas as pd
-import os
-from pyproj import Proj, transform
-from sklearn.cluster import KMeans
-from sklearn.preprocessing import StandardScaler
-from collections import Counter
-import pickle
-from functools import reduce
-import zipfile
-import numpy as np
-from tqdm import tqdm
+from programa_geovars import *
 
-scaler_lon = StandardScaler()
-scaler_lat = StandardScaler()
+with open('kmeans.pkl', 'rb') as f:
+    kmeans = pickle.load(f)
+with open('scaler_lat.pkl', 'rb') as f:
+    scaler_lat = pickle.load(f)
+with open('scaler_lon.pkl', 'rb') as f:
+    scaler_lon = pickle.load(f)
 inProj = Proj(init='epsg:25830')
 outProj = Proj(init='epsg:4326')
 distance_thres = 0.0016
 COD = 'geo_'
-train_df = pd.read_csv('dataset_train.csv')
-
+test_df = pd.read_csv('dataset_test.csv')
 
 def get_dfs(d):
     '''
@@ -154,10 +143,10 @@ def get_individual_df(nombre):
 
 
 if __name__ == '__main__':
-    print("###### abriendo dfs ##########")
+    print("#### ABRIENDO DFS ########")
     conflictivos = []
     dfs, nombres = get_dfs('./nomecalles2')
-    kmeans = KMeans(n_clusters=100, max_iter = 1000, random_state=42)
+    print(nombres)
     mydic = {}
     print('########### COGIENDO LAT LON ##########')
     for df, nombre in zip(dfs, nombres):
@@ -167,18 +156,11 @@ if __name__ == '__main__':
             print(e)
             conflictivos.append(nombre)
             continue
-    train_df.drop('Unnamed: 0', axis=1, inplace=True)
-    scaler_lat.fit(train_df.lat.values.reshape(-1, 1))
-    scaler_lon.fit(train_df.lon.values.reshape(-1, 1))
-    lat_scaled = scaler_lat.transform(train_df.lat.values.reshape(-1, 1)).reshape(-1, 1)
-    lon_scaled = scaler_lon.transform(train_df.lon.values.reshape(-1, 1)).reshape(-1, 1)
-    kmeans.fit(pd.DataFrame({'x':[l for l in lat_scaled], 'y':[l for l in lon_scaled]}))
-    with open('kmeans.pkl', 'wb') as f:
-        pickle.dump(kmeans, f)
-    with open('scaler_lat.pkl', 'wb') as f:
-        pickle.dump(scaler_lat, f)
-    with open('scaler_lon.pkl', 'wb') as f:
-        pickle.dump(scaler_lon, f)
+    print(mydic)
+    test_df.drop('Unnamed: 0', axis=1, inplace=True)
+    lat_scaled = scaler_lat.transform(test_df.lat.values.reshape(-1, 1)).reshape(-1, 1)
+    lon_scaled = scaler_lon.transform(test_df.lon.values.reshape(-1, 1)).reshape(-1, 1)
+    
     print('####### COGIENDO CLUSTERS #########')
     for nombre in tqdm(nombres):
         try:
@@ -203,34 +185,36 @@ if __name__ == '__main__':
             print(e)
             conflictivos.append(nombre)
     print('########## AÑADIENDO VARIABLE DE RUIDO ##############')
+    
     zpae = get_zpae()
-    points = [[l for l in train_df[['lon','lat']].iloc[ii]] for ii in range(train_df.shape[0])]
+    points = [[l for l in test_df[['lon','lat']].iloc[ii]] for ii in range(test_df.shape[0])]
     comparing_points = [[l for l in zpae[['lon','lat']].iloc[ii]] for ii in range(zpae.shape[0])]
     closest_nodes = [closest_node(point, comparing_points) for point in points]
     distances = [t[1] for t in closest_nodes]
     which_points = [t[0] for t in closest_nodes]
     ruidos = []
     dists = []
-    for i in tqdm(range(train_df.shape[0])):
+    for i in tqdm(range(test_df.shape[0])):
         if distances[i] >= distance_thres:
             ruidos.append(zpae['ruido'].iloc[which_points[i]])
         else:
             ruidos.append('No_Reg_Cerca')
         dists.append(distances[i])
-    train_df['ruido'] = ruidos
-    train_df['distancias_al_ruido'] = dists
+    test_df['ruido'] = ruidos
+    test_df['distancias_al_ruido'] = dists
+    
     print('####### MERGEANDO #########')
     df_final = reduce(lambda left,right: pd.merge(left,right,on='cluster', how='outer', sort=True),
                                                   processed_dfs)
     df_final.fillna(0, inplace=True)
     clusters_orig = kmeans.predict(pd.DataFrame({'x':[l for l in lat_scaled], 'y':[l for l in lon_scaled]}))
-    train_df['cluster'] = clusters_orig
+    test_df['cluster'] = clusters_orig
     distances = kmeans.transform(pd.DataFrame({'x':[l for l in lat_scaled], 'y':[l for l in lon_scaled]}))
     distances_to_centroids = []
-    for i in range(train_df.shape[0]):
-        distances_to_centroids.append(distances[i, train_df['cluster'].iloc[i]]) #se podría hacer un np.min(..., axis=1) y debería salir igual, pero no se nota tanto el coste (unos segundos), y así nos aseguramos.
-    train_df['distance_to_centroid'] = distances_to_centroids
-    merged_df = pd.merge(train_df, df_final, on='cluster', how='inner')
+    for i in range(test_df.shape[0]):
+        distances_to_centroids.append(distances[i, test_df['cluster'].iloc[i]]) #se podría hacer un np.min(..., axis=1) y debería salir igual, pero no se nota tanto el coste (unos segundos), y así nos aseguramos.
+    test_df['distance_to_centroid'] = distances_to_centroids
+    merged_df = pd.merge(test_df, df_final, on='cluster', how='inner')
     cols_with_nas = ['MAXBUILDINGFLOOR', 'CADASTRALQUALITYID']
     print(f"En el momento 4 el shape es de {merged_df.shape}")
     cols_imputar = []
@@ -239,6 +223,6 @@ if __name__ == '__main__':
             cols_imputar.append(col)
     merged_df[cols_imputar].fillna(value=0, inplace=True)
     print(f'En el momento 5 el shape es de {merged_df.shape}')
-    merged_df.to_csv('TOTAL_TRAIN.csv', header=True, index=False)
+    merged_df.to_csv('TOTAL_TEST.csv', header=True, index=False)
     print('********** Finalizado ***********')
     print(f'****************** \n Los archivos conflictivos han sido \n {set(conflictivos)} ************')
