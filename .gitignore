@@ -1,9 +1,16 @@
 *.txt
 ./mlruns/
 ./catboost_info/
+./catboost_info/*
 *.png
 *.pkl
 .ipynb_checkpoints
 .DS_Store
 /folder/*
-
+./nomecalles/
+./nomecalles/*
+./nomecalles2/
+./nomecalles2/*
+./ZPAE/
+./ZPAE/*
+*.csv

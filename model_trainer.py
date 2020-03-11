@@ -21,9 +21,9 @@ from imblearn.pipeline import Pipeline
 from collections import Counter
 from imblearn.pipeline import Pipeline
 
-NAME = 'lightgbm_geovars'
+NAME = 'lightgbm_geovars_10_03'
 N_ITER = 40
-cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
+cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=100)
 
 '''
 params = {'n_estimators': (100, 1500),
@@ -34,12 +34,12 @@ params = {'n_estimators': (100, 1500),
             }
 
 '''
-'''
-params = {'model__reg_alpha': (1e-2, 10.0),
-          'model__reg_lambda': (1e-2, 1.0),
+
+params = {'model__reg_alpha': (1e-2, 2.0, 'log-uniform'),
+          'model__reg_lambda': (1e-2, 20.0, 'log-uniform'),
           'model__n_estimators': (500, 1500),
-          'model__learning_rate': (5e-4, 5e-1)}
-'''
+          'model__learning_rate': (5e-4, 1.0, 'log-uniform')}
+
 
 '''
 params = {
@@ -58,6 +58,7 @@ params = {
     }
 '''
 
+'''
 params = {
         'depth':(6,15),
         'iterations': (500, 1600),
@@ -69,7 +70,7 @@ params = {
         #'rsm':(0.10, 0.8, 'uniform'),
         'random_strength':(1e-3, 3.0, 'log-uniform'),
     }
-
+'''
 
 
 
@@ -127,17 +128,12 @@ def get_classes_order_catboost(X_train, y_train):
 def main():
     mlflow.start_run(run_name=NAME)
     print('procesando los datos')
-    X, y, categoricas = preprocess_data('TOTAL_TRAIN.csv', process_cat=False)
-    print(X.shape)
-    print(categoricas)
-    #print(X.columns[categoricas])
-    #print(np.unique(X.iloc[:, 52]))
+    X, y = preprocess_data('TOTAL_TRAIN.csv', process_cat=True)
+    print(f"##################### The shape of X is {X.shape} #######################")
     y=y.astype('int')
-    #print(f"suma de nas es {sum(X.isna().sum())}")
-    #print(f"los dtypes son {X.dtypes}")
     
     if 'X_train.pkl' not in os.listdir():
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.10, random_state=42, stratify=y)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.15, random_state=15, stratify=y)
 
     else:
         with open('X_train.pkl', 'rb') as f:
@@ -149,19 +145,8 @@ def main():
         with open('y_test.pkl', 'rb') as f:
             y_test = pickle.load(f)
     
-    sel = [i for i in range(X_train.shape[1]) if i not in categoricas]
-    X_train.loc[:, X_train.columns[sel]] = X_train.loc[:, X_train.columns[sel]].astype('float')
-    X_test.loc[:, X_train.columns[sel]] = X_test.loc[:, X_train.columns[sel]].astype('float')
-    print(f"los dtypes de las categoricas son {X.dtypes[categoricas]}")
-    X_train.loc[:, X_train.columns[categoricas]] = X_train.loc[:, X_train.columns[categoricas]].astype('category')
-    X_test.loc[:, X_test.columns[categoricas]] = X_test.loc[:, X_train.columns[categoricas]].astype('category')
-    print(f"los dtypes de las categoricas son {X.dtypes[categoricas]}")
-    print(f"tienen clase object {X_train.columns[X_train.dtypes == object]}")
-    '''
-    for col in categoricas:
-        X_train.iloc[:, col] = [str(a) for a in X_train[X_train.columns[col]]]
-        X_test.iloc[:, col] = [str(a) for a in X_test[X_test.columns[col]]]
-    '''
+    X = X.astype('float')
+
     counter = Counter(y_train)
     maximo = 0
     for k, v in dict(counter).items():
@@ -171,9 +156,9 @@ def main():
         else:
             continue
 
-    over = SMOTE(sampling_strategy={k:int(v*15) for k, v in dict(counter).items()
+    over = SMOTE(sampling_strategy={k:int(v*20*(2/3)) for k, v in dict(counter).items()
                                 if k != llave})
-    under = RandomUnderSampler(sampling_strategy={k:int(v*0.95) for k, v in dict(counter).items()
+    under = RandomUnderSampler(sampling_strategy={k:int(v*0.95*(2/3)) for k, v in dict(counter).items()
                                if k == llave})
 
     with open('X_train.pkl', 'wb') as f:
@@ -184,7 +169,6 @@ def main():
         pickle.dump(y_train, f)
     with open('y_test.pkl', 'wb') as f:
         pickle.dump(y_test, f)
-    #X_train, y_train = pipeline.fit_resample(X_train, y_train)
 
     setlabs = [l for l in set(y_train)]
     tag2idx = {i: l for l, i in enumerate(setlabs)}
@@ -194,31 +178,27 @@ def main():
     X_train_resam = pd.get_dummies(X_train, columns = X_train.columns[categoricas])
     X_resam, y_resam = pipe_imb.fit_resample(X_train_resam, y_train)
     '''
+    '''
     cw = list(class_weight.compute_class_weight('balanced',
                                              get_classes_order_catboost(X_train, y_train),
                                              y_train))
+    '''
+    #print(f"Las features categoricas son {categoricas}, con dtypes {X_train.dtypes[categoricas]}")
+    #model = CatBoostClassifier(silent=True, loss_function='MultiClass', cat_features=categoricas, class_weights=cw, boosting_type='Plain', max_ctr_complexity=2,  thread_count=-1) #, task_type="GPU", devices='0:1')
     
-    print(f"Las features categoricas son {categoricas}, con dtypes {X_train.dtypes[categoricas]}")
-    model = CatBoostClassifier(silent=True, loss_function='MultiClass', cat_features=categoricas, class_weights=cw, boosting_type='Plain', max_ctr_complexity=2,  thread_count=-1) #, task_type="GPU", devices='0:1')
-    '''
     model = LGBMClassifier(class_weight='balanced', objective='multiclass:softmax', n_jobs=-1)
-    '''
-    '''
-    over = SMOTE(sampling_strategy={k:int(v*15*(2/3)) for k, v in dict(counter).items()
-                                if k != llave})
-    under = RandomUnderSampler(sampling_strategy={k:int(v*0.95*(2/3)) for k, v in dict(counter).items()
-                               if k == llave})
+    
     steps = [('o', over), ('u', under), ('model', model)]
     pipeline = Pipeline(steps)
-    '''
+    
     best_model = BayesSearchCV(
-                model,
+                pipeline,
                 params,
                 n_iter = N_ITER,
-                n_points=4,
+                n_points=1,
                 cv=cv,
                 scoring='f1_macro',
-                random_state=42,
+                random_state=100,
                 )
 
     def on_step(optim_result):
@@ -235,28 +215,22 @@ def main():
         mlflow.log_metric('best_score', score)
         with open(f'./best_{NAME}_params.pkl', 'wb') as f:
             pickle.dump(best_model.best_params_, f)
+        with open(f'./totalbs_{NAME}_model.pkl', 'wb') as f:
+            pickle.dump(best_model, f)
         print("best score: %s" % score)
         if score >= 0.98:
             print('Interrupting!')
             return True
 
-    '''
-    counter=0
-
-    def status(res):
-        #global counter
-        args = res.x
-        x0 = res.x_iters
-        y0 = res.func_vals
-        print('Last eval: ', x0[-1],
-            ' - Score ', y0[-1])
-        print('Current iter: ', counter,
-            ' - Score ', res.fun,
-            ' - Args: ', args)
-        #joblib.dump((x0, y0), 'checkpoint.pkl')
-        counter += 1
-    '''
-
+    #print(f'Los nombres de los features son {X.columns}')
+    good_colnames = []
+    for col in X_train.columns:
+        if not col.isascii():
+            print(f'La columna {col} no es ascii')
+            good_colnames.append('ruido_Sin_Superacion')
+        else:
+            good_colnames.append(col)
+    X_train.columns = good_colnames
     print('ajustando modelo')
     best_model.fit(X_train, y_train, callback=[on_step])
     with open(f'./best_{NAME}_model.pkl', 'wb') as f:

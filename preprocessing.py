@@ -1,6 +1,9 @@
 import pandas as pd 
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from missingpy import MissForest
+imputer = MissForest()
+#X_imputed = imputer.fit_transform(X)
 
 ##### variables que se distribuyen "raro": 
 # 3 , 13, 14 (rarísimo), 15 (casi normal pero algo asimétrico),
@@ -24,24 +27,6 @@ categorical = [53, 54]
 minmax = MinMaxScaler()
 stdscaler = StandardScaler()
 
-'''
-def process_categorical(df, cat_columns):
-    for col in cat_columns:
-        try:
-            df[col] = df[col].astype('float')
-        except Exception as e:
-            print(e)
-        df[col].fillna(value=-99, inplace=True)
-        set_ = [l for l in set(df[col])]
-        dic_ = {l:i for i, l in enumerate(set_)}
-        print(f'El diccionario de categorías es {dic_}')
-        print(f'El conjunto de unicos es {set_}')
-        for i in range(df.shape[0]):
-            llave = df[col].iloc[i]
-            df.loc[i, col] = dic_[llave]
-        df[col] = df[col].astype('category')
-    return df
-'''
 
 def process_categorical(df, cat_columns):
     for col in cat_columns:
@@ -54,6 +39,15 @@ def process_categorical(df, cat_columns):
         df[col] = df[col].astype('category')
     return df
 
+#CADASTRALQUALITYID A> B > C ...> 9
+
+def process_cadqual(df):
+    dic_ = {'A': 12, 'B':11, 'C': 10, '1': 9, '2':8, '3':7, '4':6, '5':4, '6':3, '7':2, '8':1, '9':0,
+            '1.0':9, '2.0':8, '3.0':7, '4.0':6, '5.0':4, '6.0':3, '7.0':2, '8.0':1, '9.0':0, 'nan':np.nan}
+    for i in range(df.shape[0]):
+        df['CADASTRALQUALITYID'].iloc[i] = dic_[df['CADASTRALQUALITYID'].iloc[i]]
+    df.CADASTRALQUALITYID = df.CADASTRALQUALITYID.astype('float')
+    return df
 
 def rotate(p, origin=(0, 0), degrees=0):
     angle = np.deg2rad(degrees)
@@ -87,6 +81,8 @@ def preprocess_data(f, scale=True, scaler = 'std', process_cat = False, y_name='
         whether to do one-hot encoding for categorical, as some models like catboost don't want them one-hot.
     y_name
         name of the variable where the objective is.
+    sample_trials
+        number of samples to take, if None, full data is returned.
     
     Returns
     -------------
@@ -101,17 +97,28 @@ def preprocess_data(f, scale=True, scaler = 'std', process_cat = False, y_name='
     set_clase = [l for l in set(df['CLASE'])]
     dic_clase = {l:i for i, l in enumerate(set_clase)}
     print(f'El diccionario de categorías es {dic_clase}')
+    print(f'En momento 1 el shape es {df.shape}')
     for i in range(df.shape[0]):
         df['CLASE'].iloc[i] = dic_clase[df['CLASE'].iloc[i]]
     y = df['CLASE'].values
-    df.MAXBUILDINGFLOOR = df.MAXBUILDINGFLOOR.astype('str')
-    df.cluster = df.cluster.astype('str')
     X = df.drop(['CLASE', 'ID', 'lat', 'lon'], axis = 1)
+    print(f"Valores unicos de CADASTRAL--- {X.CADASTRALQUALITYID.unique()}")
+    
+    X.CADASTRALQUALITYID = X.CADASTRALQUALITYID.astype('str')
+    X = process_cadqual(X)
+    print(f'En momento 2 el shape es de {X.shape}')
+    #X.MAXBUILDINGFLOOR = X.MAXBUILDINGFLOOR.astype('str')
+    X.cluster = X.cluster.astype('str')
+    print(f"Las columnas que tienen dtype object son {X.columns[X.dtypes == object]}")
     if process_cat:
-        X = pd.get_dummies(X, columns = df.columns[categorical])  
-    
+        X = pd.get_dummies(X, columns = X.columns[X.dtypes == object])
+    print(f'En momento 3 el shape es de {X.shape}')
+    print('Imputando valores con Random Forest')
+    cols = X.columns
+    X = imputer.fit_transform(X)
+    print(f'En momento 4 el shape es de {X.shape}')
+    X = pd.DataFrame(X, columns=cols)
     ########## HERE I TREAT LAT AND LON ########################
-    
     geo_x, geo_y, geo_z = three_dim_space(X.X, X.Y)
     X['GEO_X'] = geo_x
     X['GEO_Y'] = geo_y
@@ -131,6 +138,7 @@ def preprocess_data(f, scale=True, scaler = 'std', process_cat = False, y_name='
     X['lat_2'] = X.X **2
     X['lon_2'] = X.Y **2
     X['latxlon'] = X.X * X.Y
+    print(f'En momento 5 el shape es de {X.shape}')
     ############ VARIABLES GEOM Y AREA #########################
     #X['area_2'] = X.AREA ** 2
     #select_columns = [i for i in range(X.shape[1]) if i != categorical]
@@ -150,6 +158,7 @@ def preprocess_data(f, scale=True, scaler = 'std', process_cat = False, y_name='
             X[:, select_columns] = stdscaler.fit_transform(X[:, select_columns])
         elif scaler == 'minmax':
             X[:, select_columns] = minmax.fit_transform(X[:, select_columns])
+        print(f'En momento 6 el shape es de {X.shape}')
     if not process_cat:
         return pd.DataFrame(X, columns=colnames), y, categoricas
     else:

@@ -18,12 +18,15 @@ scaler_lon = StandardScaler()
 scaler_lat = StandardScaler()
 inProj = Proj(init='epsg:25830')
 outProj = Proj(init='epsg:4326')
-
+distance_thres = 0.0016
 COD = 'geo_'
 train_df = pd.read_csv('dataset_train.csv')
 
 
 def get_dfs(d):
+    '''
+    Get nomecalles geopandas dfs and put them in a list so that it's easier to work with them.
+    '''
     dfs, nombres =[], []
     for folder in tqdm(os.listdir(d)):
         try:
@@ -36,26 +39,63 @@ def get_dfs(d):
     return dfs, nombres
 
 
-def get_lon_lat(df, nombre):
+def closest_node(node, nodes):
+    '''
+    Computes the closest point and the distance to that point between a node and a bunch of nodes.
+    '''
+    nodes = np.asarray(nodes)
+    deltas = nodes - node
+    dist_2 = np.einsum('ij,ij->i', deltas, deltas)
+    return np.argmin(dist_2), np.min(dist_2)
+
+
+
+def get_lon_lat(df, nombre, ruido=False):
+    '''
+    This function receives a geopandas df, and a desired name for the variable
+    extracted from that dataframe. It inspects the geometric objects inside the
+    geopandas df and returns the latitude and longitude of each observation.
+    
+    Parameters
+    ---------------
+    df
+        geopandas df.
+    nombre
+        the desired name for the variable.
+    ruido
+        This boolean controls whether we are calling it for the nomecalles variables 
+        or for the "ruido" one.
+    
+    Return
+    ----------------
+    Dic
+        {nombre: {'lat':..., 'lon':...}}
+    '''
     lat, lon = [], []
-    for index, row in df.iterrows():
+    for index, row in tqdm(df.iterrows()):
+        lati, loni = [], []
         try:
             for pt in list(row['geometry'].exterior.coords):
-                lat.append(pt[1])
-                lon.append(pt[0])
+                lati.append(pt[1])
+                loni.append(pt[0])
         except Exception as e:
             try:
                 row.geometry = row.geometry.map(lambda x: x.convex_hull)
                 for pt in list(row['geometry'].exterior.coords):
-                    lat.append(pt[1])
-                    lon.append(pt[0])
+                    lati.append(pt[1])
+                    loni.append(pt[0])
             except Exception as e:
                 try:
-                    point = df.iloc[index].geometry.centroid
-                    lat.append(point.y)
-                    lon.append(point.x)
+                    lati.append(df.iloc[index].geometry.centroid.y)
+                    loni.append(df.iloc[index].geometry.centroid.x)
                 except Exception as e:
-                    print(e)
+                    if not ruido:
+                        continue
+                    else:
+                        print(e)
+                        print(df.iloc[index].geometry.centroid)
+        lat.append(sum(lati)/len(lati))
+        lon.append(sum(loni)/len(loni))
     latnew, lonnew = [], []
     for la, lo in zip(lat, lon):
         o, a = transform(inProj,outProj,lo, la)
@@ -65,7 +105,22 @@ def get_lon_lat(df, nombre):
     return {nombre: {'lon':lonnew, 'lat':latnew}}
 
 
+def get_zpae():
+    '''
+    Returns the corrected geopandas df for ruido.
+    '''
+    zpae = gpd.read_file('./ZPAE/ZPAE/TODAS_ZPAE_ETRS89.shp')
+    mydic = get_lon_lat(zpae, 'zpae', ruido=True)
+    mydic['zpae']['ruido'] = zpae.ZonaSupera
+    return pd.DataFrame(mydic['zpae'])
+
+
 def get_clusters(nombre):
+    '''
+    Takes a name and, looking for the lat and lon inside the dictionary of that name,
+    it applies a cluster over them and therefore we obtain a cluster assignation per
+    observation.
+    '''
     lon, lat = mydic[nombre]['lon'], mydic[nombre]['lat']
     scaled_lon = scaler_lon.transform(np.array(lon).reshape(-1, 1))
     scaled_lat = scaler_lat.transform(np.array(lat).reshape(-1, 1))
@@ -76,6 +131,9 @@ def get_clusters(nombre):
 
 
 def get_suma_var(nombre):
+    '''
+    Counts how many obs for the variable <name> are in each cluster.
+    '''
     print(mydic[nombre]['clusters'])
     contador = dict(Counter([c for c in mydic[nombre]['clusters']]))
     contador = {int(k):int(v) for k, v in contador.items()}
@@ -84,6 +142,9 @@ def get_suma_var(nombre):
 
 
 def get_individual_df(nombre):
+    '''
+    Creates a df with the subdictionary of that variable (name).
+    '''
     clusters = []
     contadores = []
     for k, v in mydic[nombre]['contador'].items():
@@ -94,8 +155,9 @@ def get_individual_df(nombre):
 
 if __name__ == '__main__':
     print("###### abriendo dfs ##########")
+    conflictivos = []
     dfs, nombres = get_dfs('./nomecalles2')
-    kmeans = KMeans(n_clusters=30, max_iter = 1000, random_state=42)
+    kmeans = KMeans(n_clusters=100, max_iter = 1000, random_state=42)
     mydic = {}
     print('########### COGIENDO LAT LON ##########')
     for df, nombre in zip(dfs, nombres):
@@ -103,33 +165,76 @@ if __name__ == '__main__':
             mydic.update(get_lon_lat(df, nombre))
         except Exception as e:
             print(e)
+            conflictivos.append(nombre)
             continue
     train_df.drop('Unnamed: 0', axis=1, inplace=True)
     scaler_lat.fit(train_df.lat.values.reshape(-1, 1))
     scaler_lon.fit(train_df.lon.values.reshape(-1, 1))
     lat_scaled = scaler_lat.transform(train_df.lat.values.reshape(-1, 1)).reshape(-1, 1)
     lon_scaled = scaler_lon.transform(train_df.lon.values.reshape(-1, 1)).reshape(-1, 1)
-    #print(lat_scaled)
-    #print(lat_scaled.shape)
     kmeans.fit(pd.DataFrame({'x':[l for l in lat_scaled], 'y':[l for l in lon_scaled]}))
     with open('kmeans.pkl', 'wb') as f:
         pickle.dump(kmeans, f)
     print('####### COGIENDO CLUSTERS #########')
-    for nombre in nombres:
-        mydic[nombre]['clusters'] = get_clusters(nombre)
+    for nombre in tqdm(nombres):
+        try:
+            mydic[nombre]['clusters'] = get_clusters(nombre)
+        except Exception as e:
+            print(e)
+            mydic.pop(nombre, None)
+            conflictivos.append(nombre)
     print("######### SUMA VAR ############")
-    for nombre in nombres:
-        mydic[nombre]['contador'] = get_suma_var(nombre)
+    for nombre in tqdm(nombres):
+        try:
+            mydic[nombre]['contador'] = get_suma_var(nombre)
+        except Exception as e:
+            print(e)
+            conflictivos.append(nombre)
     print('########### INDIVIDUAL DFS ###########')
-    processed_dfs = [get_individual_df(nombre) for nombre in nombres]
-    print(processed_dfs[0].head())
-    print(processed_dfs[10].head())
+    processed_dfs = []
+    for nombre in tqdm(nombres):
+        try:
+            processed_dfs.append(get_individual_df(nombre))
+        except Exception as e:
+            print(e)
+            conflictivos.append(nombre)
+    print('########## AÑADIENDO VARIABLE DE RUIDO ##############')
+    zpae = get_zpae()
+    points = [[l for l in train_df[['lon','lat']].iloc[ii]] for ii in range(train_df.shape[0])]
+    comparing_points = [[l for l in zpae[['lon','lat']].iloc[ii]] for ii in range(zpae.shape[0])]
+    closest_nodes = [closest_node(point, comparing_points) for point in points]
+    distances = [t[1] for t in closest_nodes]
+    which_points = [t[0] for t in closest_nodes]
+    ruidos = []
+    dists = []
+    for i in tqdm(range(train_df.shape[0])):
+        if distances[i] >= distance_thres:
+            ruidos.append(zpae['ruido'].iloc[which_points[i]])
+        else:
+            ruidos.append('No_Reg_Cerca')
+        dists.append(distances[i])
+    train_df['ruido'] = ruidos
+    train_df['distancias_al_ruido'] = dists
     print('####### MERGEANDO #########')
     df_final = reduce(lambda left,right: pd.merge(left,right,on='cluster', how='outer', sort=True),
                                                   processed_dfs)
     df_final.fillna(0, inplace=True)
     clusters_orig = kmeans.predict(pd.DataFrame({'x':[l for l in lat_scaled], 'y':[l for l in lon_scaled]}))
     train_df['cluster'] = clusters_orig
-    merged_df = pd.merge(train_df, df_final, on='cluster', how='outer')
+    distances = kmeans.transform(pd.DataFrame({'x':[l for l in lat_scaled], 'y':[l for l in lon_scaled]}))
+    distances_to_centroids = []
+    for i in range(train_df.shape[0]):
+        distances_to_centroids.append(distances[i, train_df['cluster'].iloc[i]]) #se podría hacer un np.min(..., axis=1) y debería salir igual, pero no se nota tanto el coste (unos segundos), y así nos aseguramos.
+    train_df['distance_to_centroid'] = distances_to_centroids
+    merged_df = pd.merge(train_df, df_final, on='cluster', how='inner')
+    cols_with_nas = ['MAXBUILDINGFLOOR', 'CADASTRALQUALITYID']
+    print(f"En el momento 4 el shape es de {merged_df.shape}")
+    cols_imputar = []
+    for col in merged_df:
+        if col not in cols_with_nas:
+            cols_imputar.append(col)
+    merged_df[cols_imputar].fillna(value=0, inplace=True)
+    print(f'En el momento 5 el shape es de {merged_df.shape}')
     merged_df.to_csv('TOTAL_TRAIN.csv', header=True, index=False)
     print('********** Finalizado ***********')
+    print(f'****************** \n Los archivos conflictivos han sido \n {set(conflictivos)} ************')
