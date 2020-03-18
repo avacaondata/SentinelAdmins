@@ -1,8 +1,9 @@
 import pandas as pd 
 import numpy as np
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler, LabelEncoder
 from missingpy import MissForest
 import pickle
+from tqdm import tqdm
 imputer = MissForest()
 #X_imputed = imputer.fit_transform(X)
 
@@ -27,10 +28,10 @@ categorical = [53, 54]
 
 minmax = MinMaxScaler()
 stdscaler = StandardScaler()
-
+encoder = LabelEncoder()
 
 def process_categorical(df, cat_columns):
-    for col in cat_columns:
+    for col in tqdm(cat_columns):
         print(f"procesada columna {col}")
         set_ = [l for l in set(df[col])]
         dic_ = {l:i for i, l in enumerate(set_)}
@@ -45,7 +46,7 @@ def process_categorical(df, cat_columns):
 def process_cadqual(df):
     dic_ = {'A': 12, 'B':11, 'C': 10, '1': 9, '2':8, '3':7, '4':6, '5':4, '6':3, '7':2, '8':1, '9':0,
             '1.0':9, '2.0':8, '3.0':7, '4.0':6, '5.0':4, '6.0':3, '7.0':2, '8.0':1, '9.0':0, 'nan':np.nan}
-    for i in range(df.shape[0]):
+    for i in tqdm(range(df.shape[0])):
         df['CADASTRALQUALITYID'].iloc[i] = dic_[df['CADASTRALQUALITYID'].iloc[i]]
     df.CADASTRALQUALITYID = df.CADASTRALQUALITYID.astype('float')
     return df
@@ -95,13 +96,16 @@ def partial_preprocess_train(f, scale=True, scaler = 'std', process_cat = False,
     df = pd.read_csv(f)
     if sample_trials is not None:
         df = df.sample(sample_trials)
-    set_clase = [l for l in set(df['CLASE'])]
-    dic_clase = {l:i for i, l in enumerate(set_clase)}
-    for i in range(df.shape[0]):
-        df['CLASE'].iloc[i] = dic_clase[df['CLASE'].iloc[i]]
-    y = df['CLASE'].values
+    #set_clase = [l for l in set(df['CLASE'])]
+    #dic_clase = {l:i for i, l in enumerate(set_clase)}
+    #for i in tqdm(range(df.shape[0])):
+    #    df['CLASE'].iloc[i] = dic_clase[df['CLASE'].iloc[i]]
+    #y = df['CLASE'].values
+    encoder.fit(df.CLASE.values)
+    
     X = df.drop(['CLASE', 'ID', 'lat', 'lon'], axis = 1)
     X.CADASTRALQUALITYID = X.CADASTRALQUALITYID.astype('str')
+    X.CODIGO_POSTAL = X.CODIGO_POSTAL.astype('str')
     X = process_cadqual(X)
     #X.MAXBUILDINGFLOOR = X.MAXBUILDINGFLOOR.astype('str')
     X.cluster = X.cluster.astype('str')
@@ -140,17 +144,21 @@ def preprocess_data(f, scale=True, scaler = 'std', process_cat = False, y_name='
     df = pd.read_csv(f)
     if sample_trials is not None:
         df = df.sample(sample_trials)
-    set_clase = [l for l in set(df['CLASE'])]
-    dic_clase = {l:i for i, l in enumerate(set_clase)}
-    print(f'El diccionario de categorías es {dic_clase}')
-    print(f'En momento 1 el shape es {df.shape}')
-    for i in range(df.shape[0]):
-        df['CLASE'].iloc[i] = dic_clase[df['CLASE'].iloc[i]]
-    y = df['CLASE'].values
-    X = df.drop(['CLASE', 'ID', 'lat', 'lon'], axis = 1)
+    #set_clase = [l for l in set(df['CLASE'])]
+    #dic_clase = {l:i for i, l in enumerate(set_clase)}
+    #print(f'El diccionario de categorías es {dic_clase}')
+    #print(f'En momento 1 el shape es {df.shape}')
+    #for i in range(df.shape[0]):
+    #    df.loc[i, 'CLASE'] = dic_clase[df.loc[i, 'CLASE']]
+    encoder.fit(df.CLASE.values)
+    y = encoder.transform(df.CLASE.values)
+    #y = df['CLASE'].values
+    X = df.drop(['CLASE', 'ID', 'lat', 'lon', 'lat.1', 'lon.1'], axis = 1)
     print(f"Valores unicos de CADASTRAL--- {X.CADASTRALQUALITYID.unique()}")
     
     X.CADASTRALQUALITYID = X.CADASTRALQUALITYID.astype('str')
+    X.CODIGO_POSTAL = X.CODIGO_POSTAL.astype('str')
+    
     X = process_cadqual(X)
     print(f'En momento 2 el shape es de {X.shape}')
     #X.MAXBUILDINGFLOOR = X.MAXBUILDINGFLOOR.astype('str')
@@ -165,8 +173,11 @@ def preprocess_data(f, scale=True, scaler = 'std', process_cat = False, y_name='
     X = imputer.transform(X)
     with open('imputer.pkl', 'wb') as f:
         pickle.dump(imputer, f)
+    
     print(f'En momento 4 el shape es de {X.shape}')
     X = pd.DataFrame(X, columns=cols)
+    X.MAXBUILDINGFLOOR.clip(0., 25., inplace=True)
+    X.CADASTRALQUALITYID.clip(0., 12., inplace=True)
     ########## HERE I TREAT LAT AND LON ########################
     geo_x, geo_y, geo_z = three_dim_space(X.X, X.Y)
     X['GEO_X'] = geo_x
@@ -211,7 +222,7 @@ def preprocess_data(f, scale=True, scaler = 'std', process_cat = False, y_name='
     if not process_cat:
         return pd.DataFrame(X, columns=colnames), y, categoricas
     else:
-        return pd.DataFrame(X, columns=colnames), y, dic_clase
+        return pd.DataFrame(X, columns=colnames), y, encoder
     
     
 def preprocess_test(f, scale=True, scaler = 'std', process_cat = False, sample_trials=None):
@@ -246,9 +257,10 @@ def preprocess_test(f, scale=True, scaler = 'std', process_cat = False, sample_t
     #set_clase = [l for l in set(df['CLASE'])]
     #dic_clase = {l:i for i, l in enumerate(set_clase)}
     print(f'En momento 1 el shape es {df.shape}')
-    X = df.drop(['ID', 'lat', 'lon'], axis = 1)
+    X = df.drop(['ID', 'lat', 'lon', 'lat.1', 'lon.1'], axis = 1)
     print(f"Valores unicos de CADASTRAL--- {X.CADASTRALQUALITYID.unique()}")
     X.CADASTRALQUALITYID = X.CADASTRALQUALITYID.astype('str')
+    X.CODIGO_POSTAL = X.CODIGO_POSTAL.astype('str')
     X = process_cadqual(X)
     print(f'En momento 2 el shape es de {X.shape}')
     #X.MAXBUILDINGFLOOR = X.MAXBUILDINGFLOOR.astype('str')

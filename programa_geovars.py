@@ -21,6 +21,8 @@ outProj = Proj(init='epsg:4326')
 distance_thres = 0.0016
 COD = 'geo_'
 train_df = pd.read_csv('dataset_train.csv')
+variables_armando = pd.read_csv('variables_cod_postal_lon_lat.csv')
+variables_armando.drop(['medianaEdad', 'CODIGO_POSTAL_NUMBER'], axis=1, inplace=True)
 
 
 def get_dfs(d):
@@ -204,18 +206,18 @@ if __name__ == '__main__':
             conflictivos.append(nombre)
     print('########## AÑADIENDO VARIABLE DE RUIDO ##############')
     zpae = get_zpae()
-    points = [[l for l in train_df[['lon','lat']].iloc[ii]] for ii in range(train_df.shape[0])]
-    comparing_points = [[l for l in zpae[['lon','lat']].iloc[ii]] for ii in range(zpae.shape[0])]
-    closest_nodes = [closest_node(point, comparing_points) for point in points]
-    distances = [t[1] for t in closest_nodes]
-    which_points = [t[0] for t in closest_nodes]
+    points = [[l for l in train_df[['lon','lat']].iloc[ii]] for ii in tqdm(range(train_df.shape[0]))]
+    comparing_points = [[l for l in zpae[['lon','lat']].iloc[ii]] for ii in tqdm(range(zpae.shape[0]))]
+    closest_nodes = [closest_node(point, comparing_points) for point in tqdm(points)]
+    distances = [t[1] for t in tqdm(closest_nodes)]
+    which_points = [t[0] for t in tqdm(closest_nodes)]
     ruidos = []
     dists = []
     for i in tqdm(range(train_df.shape[0])):
         if distances[i] >= distance_thres:
             ruidos.append(zpae['ruido'].iloc[which_points[i]])
         else:
-            ruidos.append('No_Reg_Cerca')
+            ruidos.append('ruido_No_Registrado')
         dists.append(distances[i])
     train_df['ruido'] = ruidos
     train_df['distancias_al_ruido'] = dists
@@ -239,6 +241,29 @@ if __name__ == '__main__':
             cols_imputar.append(col)
     merged_df[cols_imputar].fillna(value=0, inplace=True)
     print(f'En el momento 5 el shape es de {merged_df.shape}')
+    
+    print('###### SACANDO VARIABLES ARMANDO #####')
+    comparing_points = [[l for l in variables_armando[['lon','lat']].iloc[ii]] for ii in range(variables_armando.shape[0])]
+    closest_nodes = [closest_node(point, comparing_points) for point in points]
+    distances = [t[1] for t in closest_nodes]
+    which_points = [t[0] for t in closest_nodes]
+    '''
+    variables_armando['lon'] = scaler_lon.transform(variables_armando['lon'])
+    variables_armando['lat'] = scaler_lon.transform(variables_armando['lat'])
+    variables_armando['cluster'] = kmeans.predict(variables_armando[['lat', 'lon']])
+    variables_armando.drop(['lon', 'lat', '
+    '''
+    #for k in 
+    df_arm = pd.DataFrame({k:[variables_armando.loc[which_points[i], k]] for k in variables_armando.columns for i in tqdm(range(len(which_points)))})
+    '''
+    for i in tqdm(range(len(which_points))):
+        df_arm = pd.concat([df_arm, variables_armando.iloc[which_points[i], :]], ignore_index=True)
+    '''
+    cols_merged = merged_df.columns
+    cols_arm = df_arm.columns
+    
+    merged_df = pd.concat([merged_df, df_arm], axis=1)
+    print(merged_df.shape)
     merged_df.to_csv('TOTAL_TRAIN.csv', header=True, index=False)
     print('********** Finalizado ***********')
     print(f'****************** \n Los archivos conflictivos han sido \n {set(conflictivos)} ************')
