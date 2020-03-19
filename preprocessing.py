@@ -153,7 +153,7 @@ def preprocess_data(f, scale=True, scaler = 'std', process_cat = False, y_name='
     encoder.fit(df.CLASE.values)
     y = encoder.transform(df.CLASE.values)
     #y = df['CLASE'].values
-    X = df.drop(['CLASE', 'ID', 'lat', 'lon', 'lat.1', 'lon.1'], axis = 1)
+    X = df.drop(['CLASE', 'ID', 'lat', 'lon', 'cluster'], axis = 1)
     print(f"Valores unicos de CADASTRAL--- {X.CADASTRALQUALITYID.unique()}")
     
     X.CADASTRALQUALITYID = X.CADASTRALQUALITYID.astype('str')
@@ -162,8 +162,12 @@ def preprocess_data(f, scale=True, scaler = 'std', process_cat = False, y_name='
     X = process_cadqual(X)
     print(f'En momento 2 el shape es de {X.shape}')
     #X.MAXBUILDINGFLOOR = X.MAXBUILDINGFLOOR.astype('str')
-    X.cluster = X.cluster.astype('str')
+    #X.cluster = X.cluster.astype('str')
     print(f"Las columnas que tienen dtype object son {X.columns[X.dtypes == object]}")
+    for col in X.columns[X.dtypes==object]:
+        if sum(X[col].isna()):
+            X.loc[X[col].isna(), col] = f"{col}_Ausente"
+    
     if process_cat:
         X = pd.get_dummies(X, columns = X.columns[X.dtypes == object])
     print(f'En momento 3 el shape es de {X.shape}')
@@ -264,7 +268,7 @@ def preprocess_test(f, scale=True, scaler = 'std', process_cat = False, sample_t
     X = process_cadqual(X)
     print(f'En momento 2 el shape es de {X.shape}')
     #X.MAXBUILDINGFLOOR = X.MAXBUILDINGFLOOR.astype('str')
-    X.cluster = X.cluster.astype('str')
+    #X.cluster = X.cluster.astype('str')
     print(f"Las columnas que tienen dtype object son {X.columns[X.dtypes == object]}")
     if process_cat:
         X = pd.get_dummies(X, columns = X.columns[X.dtypes == object])

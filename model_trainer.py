@@ -78,16 +78,16 @@ params = {'n_estimators': (100, 1500),
 '''
 
 
-params = {'model__reg_alpha': (1e-3, 5.0, 'log-uniform'),
-          'model__reg_lambda': (1e-2, 50.0, 'log-uniform'),
-          'model__n_estimators': (600, 3000),
-          'model__learning_rate': (5e-4, 1.0, 'log-uniform'),
-          'model__num_leaves': (25, 60),
-          'model__boosting_type': ['gbdt', 'goss'],
-          'model__colsample_bytree': (0.2, 1.0, 'uniform'),
-          'model__subsample': (0.5, 1.0, 'uniform'),
-          'model__min_child_samples': (1, 25),
-          'model__min_child_weight': (1e-6, 0.01, 'log-uniform'),}
+params = {'reg_alpha': (1e-3, 5.0, 'log-uniform'),
+          'reg_lambda': (1e-2, 50.0, 'log-uniform'),
+          'n_estimators': (600, 3000),
+          'learning_rate': (5e-4, 1.0, 'log-uniform'),
+          'num_leaves': (25, 60),
+          'boosting_type': ['gbdt', 'goss'],
+          'colsample_bytree': (0.2, 1.0, 'uniform'),
+          'subsample': (0.5, 1.0, 'uniform'),
+          'min_child_samples': (1, 25),
+          'min_child_weight': (1e-6, 0.01, 'log-uniform'),}
 
 
 
@@ -189,7 +189,8 @@ def get_classes_order_catboost(X_train, y_train):
 def main():
     mlflow.start_run(run_name=NAME)
     print('procesando los datos')
-    X, y, encoder = preprocess_data('new_total_train.csv', process_cat=True)
+    X, y, encoder = preprocess_data('TOTAL_TRAIN.csv', process_cat=True)
+    labs_names = [c for c in encoder.classes_]
     #tag2idx = {k: v for k, v in sorted(tag2idx.items(), key=lambda item: item[1])}
     #labs_names = [k for k in tag2idx.keys()]
     with open(f"label_encoder_{NAME}.pkl", "wb") as f:
@@ -230,9 +231,9 @@ def main():
     #print(dic_smote)
     #dic_smote[tag2idx['OFFICE']] = int(dic_smote[tag2idx['OFFICE']]*1.7)
     
-    over = SMOTE(sampling_strategy=dic_smote)
+    #over = SMOTE(sampling_strategy=dic_smote)
     
-    under = RandomUnderSampler(sampling_strategy={k:int(v*0.95*(2/3)) for k, v in dict(counter).items() if k == llave})
+    #under = RandomUnderSampler(sampling_strategy={k:int(v*0.95*(2/3)) for k, v in dict(counter).items() if k == llave})
     
     #under = UnderSampling(llave=llave)
     #over = OverSampling(llave=llave)
@@ -268,8 +269,8 @@ def main():
     
     model = LGBMClassifier(class_weight='balanced', objective='multiclass:softmax', n_jobs=-1, random_state=100)
     #model = XGBClassifier(class_weight='balanced', objective='multiclass:softmax', n_jobs=-1, random_state=100)
-    steps = [('over', over), ('under', under), ('model', model)] # ('o', over), 
-    pipeline = Pipeline(steps)
+    #steps = [('over', over), ('under', under), ('model', model)] # ('o', over), 
+    #pipeline = Pipeline(steps)
     
     '''
     with open('best_lightgbm_geovars_10_03_params.pkl', 'rb') as f:
@@ -291,7 +292,7 @@ def main():
     #print(f"Score is {pipeline_prueba.score(y_test, X_test)}")
     '''
     best_model = BayesSearchCV(
-                pipeline,
+                model,
                 params,
                 n_iter = N_ITER,
                 n_points=1,

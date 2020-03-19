@@ -13,7 +13,9 @@ from functools import reduce
 import zipfile
 import numpy as np
 from tqdm import tqdm
+import requests 
 
+pd.options.display.max_rows = 10000
 scaler_lon = StandardScaler()
 scaler_lat = StandardScaler()
 inProj = Proj(init='epsg:25830')
@@ -21,8 +23,19 @@ outProj = Proj(init='epsg:4326')
 distance_thres = 0.0016
 COD = 'geo_'
 train_df = pd.read_csv('dataset_train.csv')
-variables_armando = pd.read_csv('variables_cod_postal_lon_lat.csv')
-variables_armando.drop(['medianaEdad', 'CODIGO_POSTAL_NUMBER'], axis=1, inplace=True)
+variables_armando = pd.read_csv('variables_codigo_postal.csv')
+cod_postales = gpd.read_file('codigos_postales_madrid/codigos_postales_madrid.shp')
+
+
+def get_postal_codes(points):
+    codigos = np.zeros((len(points),))
+    for i, p in tqdm(enumerate(points)):
+        p = Point(p[0], p[1])
+        for j in range(cod_postales.shape[0]):
+            if cod_postales.geometry.iloc[j].contains(p):
+                codigos[i] = cod_postales.geocodigo.iloc[j]
+    #assert np.sum(codigos==0) == 0
+    return codigos[codigos!=0]
 
 
 def get_dfs(d):
@@ -136,8 +149,8 @@ def get_suma_var(nombre):
     '''
     Counts how many obs for the variable <name> are in each cluster.
     '''
-    print(mydic[nombre]['clusters'])
-    contador = dict(Counter([c for c in mydic[nombre]['clusters']]))
+    print(mydic[nombre]['CODIGO_POSTAL'])
+    contador = dict(Counter([c for c in mydic[nombre]['CODIGO_POSTAL']])) #['clusters']
     contador = {int(k):int(v) for k, v in contador.items()}
     #print(contador)
     return contador
@@ -152,7 +165,13 @@ def get_individual_df(nombre):
     for k, v in mydic[nombre]['contador'].items():
         clusters.append(k)
         contadores.append(v)
-    return pd.DataFrame({'cluster': clusters, f'contadores_{nombre}':contadores})
+    return pd.DataFrame({'CODIGO_POSTAL': clusters, f'contadores_{nombre}':contadores})
+
+
+def get_madrid_codes(df):
+    df.dropna(inplace=True)
+    #df_madrid = df[(df.CODIGO_POSTAL>27000) & (df.CODIGO_POSTAL<29000)]
+    return df #df_madrid
 
 
 if __name__ == '__main__':
@@ -181,10 +200,12 @@ if __name__ == '__main__':
         pickle.dump(scaler_lat, f)
     with open('scaler_lon.pkl', 'wb') as f:
         pickle.dump(scaler_lon, f)
-    print('####### COGIENDO CLUSTERS #########')
+    print('####### COGIENDO CODIGOS POSTALES #########')
     for nombre in tqdm(nombres):
         try:
-            mydic[nombre]['clusters'] = get_clusters(nombre)
+            #mydic[nombre]['clusters'] = get_clusters(nombre)
+            pts = [(lon, lat) for lon, lat in zip(mydic[nombre]['lon'], mydic[nombre]['lat'])]
+            mydic[nombre]['CODIGO_POSTAL'] = get_postal_codes(pts)
         except Exception as e:
             print(e)
             mydic.pop(nombre, None)
@@ -195,6 +216,7 @@ if __name__ == '__main__':
             mydic[nombre]['contador'] = get_suma_var(nombre)
         except Exception as e:
             print(e)
+            print(mydic[nombre])
             conflictivos.append(nombre)
     print('########### INDIVIDUAL DFS ###########')
     processed_dfs = []
@@ -202,7 +224,8 @@ if __name__ == '__main__':
         try:
             processed_dfs.append(get_individual_df(nombre))
         except Exception as e:
-            print(e)
+            #print(e)
+            print(mydic[nombre])
             conflictivos.append(nombre)
     print('########## AÑADIENDO VARIABLE DE RUIDO ##############')
     zpae = get_zpae()
@@ -222,17 +245,25 @@ if __name__ == '__main__':
     train_df['ruido'] = ruidos
     train_df['distancias_al_ruido'] = dists
     print('####### MERGEANDO #########')
-    df_final = reduce(lambda left,right: pd.merge(left,right,on='cluster', how='outer', sort=True),
+    train_points = [(lon, lat) for lon, lat in zip(train_df.lon, train_df.lat)]
+    train_df['CODIGO_POSTAL'] = get_postal_codes(train_points)
+
+    df_final = reduce(lambda left,right: pd.merge(left,right,on='CODIGO_POSTAL', how='outer', sort=True),
                                                   processed_dfs)
     df_final.fillna(0, inplace=True)
     clusters_orig = kmeans.predict(pd.DataFrame({'x':[l for l in lat_scaled], 'y':[l for l in lon_scaled]}))
     train_df['cluster'] = clusters_orig
     distances = kmeans.transform(pd.DataFrame({'x':[l for l in lat_scaled], 'y':[l for l in lon_scaled]}))
     distances_to_centroids = []
-    for i in range(train_df.shape[0]):
+    for i in tqdm(range(train_df.shape[0])):
         distances_to_centroids.append(distances[i, train_df['cluster'].iloc[i]]) #se podría hacer un np.min(..., axis=1) y debería salir igual, pero no se nota tanto el coste (unos segundos), y así nos aseguramos.
     train_df['distance_to_centroid'] = distances_to_centroids
-    merged_df = pd.merge(train_df, df_final, on='cluster', how='inner')
+
+    print(f'##################### Codigos Postales Unicos: \n train df {train_df.CODIGO_POSTAL.unique()}\
+           and \n {df_final.CODIGO_POSTAL.unique()}; lens: {len(train_df.CODIGO_POSTAL.unique())}\
+           and {len(df_final.CODIGO_POSTAL.unique())}')
+
+    merged_df = pd.merge(train_df, df_final, on='CODIGO_POSTAL', how='inner')
     cols_with_nas = ['MAXBUILDINGFLOOR', 'CADASTRALQUALITYID']
     print(f"En el momento 4 el shape es de {merged_df.shape}")
     cols_imputar = []
@@ -243,10 +274,10 @@ if __name__ == '__main__':
     print(f'En el momento 5 el shape es de {merged_df.shape}')
     
     print('###### SACANDO VARIABLES ARMANDO #####')
-    comparing_points = [[l for l in variables_armando[['lon','lat']].iloc[ii]] for ii in range(variables_armando.shape[0])]
-    closest_nodes = [closest_node(point, comparing_points) for point in points]
-    distances = [t[1] for t in closest_nodes]
-    which_points = [t[0] for t in closest_nodes]
+    #comparing_points = [[l for l in variables_armando[['lon','lat']].iloc[ii]] for ii in range(variables_armando.shape[0])]
+    #closest_nodes = [closest_node(point, comparing_points) for point in points]
+    #distances = [t[1] for t in closest_nodes]
+    #which_points = [t[0] for t in closest_nodes]
     '''
     variables_armando['lon'] = scaler_lon.transform(variables_armando['lon'])
     variables_armando['lat'] = scaler_lon.transform(variables_armando['lat'])
@@ -254,16 +285,20 @@ if __name__ == '__main__':
     variables_armando.drop(['lon', 'lat', '
     '''
     #for k in 
-    df_arm = pd.DataFrame({k:[variables_armando.loc[which_points[i], k]] for k in variables_armando.columns for i in tqdm(range(len(which_points)))})
+    #df_arm = pd.DataFrame({k:[variables_armando.loc[which_points[i], k]] for k in variables_armando.columns for i in tqdm(range(len(which_points)))})
     '''
     for i in tqdm(range(len(which_points))):
         df_arm = pd.concat([df_arm, variables_armando.iloc[which_points[i], :]], ignore_index=True)
     '''
-    cols_merged = merged_df.columns
-    cols_arm = df_arm.columns
-    
-    merged_df = pd.concat([merged_df, df_arm], axis=1)
-    print(merged_df.shape)
+    #cols_merged = merged_df.columns
+    #cols_arm = df_arm.columns
+    variables_armando.drop(['medianaEdad', 'CODIGO_POSTAL_NUMBER'], axis=1, inplace=True)
+    #variables_armando = get_madrid_codes(variables_armando)
+    merged_df.CODIGO_POSTAL = merged_df.CODIGO_POSTAL.astype('float')
+    variables_armando.CODIGO_POSTAL = variables_armando.CODIGO_POSTAL.astype('float')
+    merged_df = pd.merge(merged_df, variables_armando, on='CODIGO_POSTAL', how='left')
+    print(f'En el momento 6 el shape es de {merged_df.shape}')
     merged_df.to_csv('TOTAL_TRAIN.csv', header=True, index=False)
+    print(f'NAs in final DF is {merged_df.isna().sum()}')
     print('********** Finalizado ***********')
     print(f'****************** \n Los archivos conflictivos han sido \n {set(conflictivos)} ************')
