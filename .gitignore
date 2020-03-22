@@ -1,3 +1,4 @@
 ./bks_y_referencias/*
 ./bks_y_referencias/
-*.csv
+Modelar_UH2020.txt
+dataset_train.csv
