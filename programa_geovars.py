@@ -23,7 +23,9 @@ outProj = Proj(init='epsg:4326')
 distance_thres = 0.0016
 COD = 'geo_'
 train_df = pd.read_csv('dataset_train.csv')
-variables_armando = pd.read_csv('variables_codigo_postal.csv')
+#variables_armando = pd.read_csv('variables_codigo_postal.csv')
+variables_armando = pd.read_csv('vars_censo_codigo_postal.csv')
+#vars_armando_provincia = pd.read_csv('vars_censo_codigo_postal_provincia.csv')
 cod_postales = gpd.read_file('codigos_postales_madrid/codigos_postales_madrid.shp')
 
 
@@ -292,13 +294,20 @@ if __name__ == '__main__':
     '''
     #cols_merged = merged_df.columns
     #cols_arm = df_arm.columns
-    variables_armando.drop(['medianaEdad', 'CODIGO_POSTAL_NUMBER'], axis=1, inplace=True)
+    #variables_armando.drop(['medianaEdad', 'CODIGO_POSTAL_NUMBER'], axis=1, inplace=True)
     #variables_armando = get_madrid_codes(variables_armando)
     merged_df.CODIGO_POSTAL = merged_df.CODIGO_POSTAL.astype('float')
     variables_armando.CODIGO_POSTAL = variables_armando.CODIGO_POSTAL.astype('float')
-    merged_df = pd.merge(merged_df, variables_armando, on='CODIGO_POSTAL', how='left')
-    print(f'En el momento 6 el shape es de {merged_df.shape}')
-    merged_df.to_csv('TOTAL_TRAIN.csv', header=True, index=False)
-    print(f'NAs in final DF is {merged_df.isna().sum()}')
+    variables_armando.drop_duplicates(subset=['CODIGO_POSTAL'], inplace=True)
+    #vars_armando_provincia.CODIGO_POSTAL = vars_armando_provincia.CODIGO_POSTAL.astype('float')
+    #vars_armando_total = pd.concat([variables_armando, vars_armando_provincia], ignore_index=True)
+    merged_df2 = pd.merge(merged_df, variables_armando, on='CODIGO_POSTAL', how='left')
+    print(f'En el momento 6 el shape es de {merged_df2.shape}')
+    '''
+    if merged_df2.shape[0] > 104000 or merged_df2.shape[0] < 103000:
+        merged_df2 = pd.merge(merged_df, variables_armando, on='CODIGO_POSTAL', how='left')
+    '''
+    merged_df2.to_csv('TOTAL_TRAIN.csv', header=True, index=False)
+    print(f'NAs in final DF is {merged_df2.isna().sum()}')
     print('********** Finalizado ***********')
     print(f'****************** \n Los archivos conflictivos han sido \n {set(conflictivos)} ************')

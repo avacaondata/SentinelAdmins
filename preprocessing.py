@@ -155,10 +155,26 @@ def preprocess_data(f, scale=True, scaler = 'std', process_cat = False, y_name='
     #y = df['CLASE'].values
     X = df.drop(['CLASE', 'ID', 'lat', 'lon', 'cluster'], axis = 1)
     print(f"Valores unicos de CADASTRAL--- {X.CADASTRALQUALITYID.unique()}")
-    
+    cols_conflictivas = ['edad_media', 'p_poblacion_menor_de_18',
+                         'p_poblacion_mayor_65', 'media_personas_por_hogar',
+                         'p_hogares_unipersonales', 'poblacion']
+
+    for col in cols_conflictivas:
+        for i in range(X.shape[0]):
+            try:
+                float(X[col].iloc[i])
+            except:
+                X[col].iloc[i] = np.nan
+    X[cols_conflictivas] = X[cols_conflictivas].astype('float')
     X.CADASTRALQUALITYID = X.CADASTRALQUALITYID.astype('str')
     X.CODIGO_POSTAL = X.CODIGO_POSTAL.astype('str')
-    
+    cols_geoms = [col for col in X.columns if 'GEOM' in col]
+    for col in tqdm(cols_geoms):
+        otras = [c for c in cols_geoms if c != col]
+        for otracol in otras:
+            X[f"{col}_x_{otracol}"] = X[col]*X[otracol]
+        X[f"{col}_x_area"] = X[col]*X['AREA']
+        X[f"{col}_2"] = X[col]**2
     X = process_cadqual(X)
     print(f'En momento 2 el shape es de {X.shape}')
     #X.MAXBUILDINGFLOOR = X.MAXBUILDINGFLOOR.astype('str')

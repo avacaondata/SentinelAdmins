@@ -21,11 +21,16 @@ from imblearn.pipeline import Pipeline
 from collections import Counter
 from imblearn.pipeline import Pipeline
 from sklearn.base import TransformerMixin
+from sklearn.metrics import make_scorer, fbeta_score, f1_score# Evaluation functions
+f2_scorer = make_scorer(fbeta_score, beta=2, average='macro')
+f05_scorer = make_scorer(fbeta_score, beta=0.5, average='macro')
+#f1_scorer = make_scorer(f1_score)
 
-NAME = 'lightgbm_vars_armando_1803'
-N_ITER = 100
+
+NAME = 'INDIVIDUAL_PRUEBAS_2303'
+N_ITER = 200
 cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=100)
-
+MODE = 'INDIVIDUAL'
 
 class UnderSampling(TransformerMixin):
     """
@@ -59,7 +64,7 @@ class OverSampling(TransformerMixin):
     def fit(self, X, y=None):
         counter=Counter(y)
         self.dic_smote = {k:int(v*n) for k, v, n in zip(dict(counter).items(), self.ns)
-                          if k != llave}
+                          if k != self.llave}
         self.over = SMOTE(sampling_strategy=self.dic_smote)
         self.over.fit(X, y)
         return self
@@ -80,14 +85,14 @@ params = {'n_estimators': (100, 1500),
 
 params = {'reg_alpha': (1e-3, 5.0, 'log-uniform'),
           'reg_lambda': (1e-2, 50.0, 'log-uniform'),
-          'n_estimators': (600, 3000),
-          'learning_rate': (5e-4, 1.0, 'log-uniform'),
-          'num_leaves': (25, 60),
+          'n_estimators': (600, 4000),
+          'learning_rate': (5e-3, 1.0, 'log-uniform'),
+          'num_leaves': (25, 70),
           'boosting_type': ['gbdt', 'goss'],
-          'colsample_bytree': (0.2, 1.0, 'uniform'),
-          'subsample': (0.5, 1.0, 'uniform'),
+          'colsample_bytree': (0.1, 1.0, 'uniform'),
+          'subsample': (0.4, 1.0, 'uniform'),
           'min_child_samples': (1, 25),
-          'min_child_weight': (1e-6, 0.01, 'log-uniform'),}
+          'min_child_weight': (1e-6, 0.1, 'log-uniform'),}
 
 
 
@@ -188,20 +193,27 @@ def get_classes_order_catboost(X_train, y_train):
 
 def main():
     mlflow.start_run(run_name=NAME)
-    print('procesando los datos')
-    X, y, encoder = preprocess_data('TOTAL_TRAIN.csv', process_cat=True)
-    labs_names = [c for c in encoder.classes_]
-    #tag2idx = {k: v for k, v in sorted(tag2idx.items(), key=lambda item: item[1])}
-    #labs_names = [k for k in tag2idx.keys()]
-    with open(f"label_encoder_{NAME}.pkl", "wb") as f:
-        pickle.dump(encoder, f)
-    print(f"##################### The shape of X is {X.shape} #######################")
-    y=y.astype('int')
-    print('######### Eliminando columnas que antes no estaban ###########')
-    #X.drop(['distancias_al_ruido' , 'contadores_pension1.shp', 'contadores_host3.shp', 'contadores_hoteles4.shp', 'contadores_host1.shp', 'contadores_campus.shp'], axis=1, inplace=True)
+    
     if 'X_train.pkl' not in os.listdir():
+        print('procesando los datos')
+        X, y, encoder = preprocess_data('TOTAL_TRAIN.csv', process_cat=True)
+        X = X.astype('float')
+        print(X.shape)
+        
+        with open(f"label_encoder_{NAME}.pkl", "wb") as f:
+            pickle.dump(encoder, f)
+        print(f"##################### The shape of X is {X.shape} #######################")
+        y=y.astype('int')
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.15, random_state=15, stratify=y)
-
+        print(X_train.shape)
+        with open('X_train.pkl', 'wb') as f:
+            pickle.dump(X_train, f)
+        with open('X_test.pkl', 'wb') as f:
+            pickle.dump(X_test, f)
+        with open('y_train.pkl', 'wb') as f:
+            pickle.dump(y_train, f)
+        with open('y_test.pkl', 'wb') as f:
+            pickle.dump(y_test, f)
     else:
         with open('X_train.pkl', 'rb') as f:
             X_train = pickle.load(f)
@@ -211,10 +223,12 @@ def main():
             y_train = pickle.load(f)
         with open('y_test.pkl', 'rb') as f:
             y_test = pickle.load(f)
+        with open('label_encoder.pkl', 'rb') as f:
+            encoder = pickle.load(f)
+        with open('best_lightgbm_vars_armando_1803_params.pkl', 'rb') as f:
+            params = pickle.load(f)
+    labs_names = [c for c in encoder.classes_]
     
-    X = X.astype('float')
-    print(X.shape)
-    print(X_train.shape)
     counter = Counter(y_train)
     maximo = 0
     for k, v in dict(counter).items():
@@ -228,37 +242,10 @@ def main():
     dic_smote = {k:int(v*10*(2/3)) for k, v in dict(counter).items()
                                 if k != llave}
     
-    #print(dic_smote)
-    #dic_smote[tag2idx['OFFICE']] = int(dic_smote[tag2idx['OFFICE']]*1.7)
+    over = SMOTE(sampling_strategy=dic_smote)
     
-    #over = SMOTE(sampling_strategy=dic_smote)
+    under = RandomUnderSampler(sampling_strategy={k:int(v*0.95*(2/3)) for k, v in dict(counter).items() if k == llave})
     
-    #under = RandomUnderSampler(sampling_strategy={k:int(v*0.95*(2/3)) for k, v in dict(counter).items() if k == llave})
-    
-    #under = UnderSampling(llave=llave)
-    #over = OverSampling(llave=llave)
-    
-    with open('X_train.pkl', 'wb') as f:
-        pickle.dump(X_train, f)
-    with open('X_test.pkl', 'wb') as f:
-        pickle.dump(X_test, f)
-    with open('y_train.pkl', 'wb') as f:
-        pickle.dump(y_train, f)
-    with open('y_test.pkl', 'wb') as f:
-        pickle.dump(y_test, f)
-
-    #setlabs = [l for l in set(y_train)]
-    #tag2idx = {i: l for l, i in enumerate(setlabs)}
-    '''
-    print(f"tag2idx is {tag2idx}")
-    with open(f"tag2idx_{NAME}.pkl", "wb") as f:
-        pickle.dump(tag2idx, f)
-    '''
-    '''
-    pipe_imb = Pipeline([('o', over), ('u', under)])
-    X_train_resam = pd.get_dummies(X_train, columns = X_train.columns[categoricas])
-    X_resam, y_resam = pipe_imb.fit_resample(X_train_resam, y_train)
-    '''
     '''
     cw = list(class_weight.compute_class_weight('balanced',
                                              get_classes_order_catboost(X_train, y_train),
@@ -267,44 +254,41 @@ def main():
     #print(f"Las features categoricas son {categoricas}, con dtypes {X_train.dtypes[categoricas]}")
     #model = CatBoostClassifier(silent=True, loss_function='MultiClass', cat_features=categoricas, class_weights=cw, boosting_type='Plain', max_ctr_complexity=2,  thread_count=-1) #, task_type="GPU", devices='0:1')
     
-    model = LGBMClassifier(class_weight='balanced', objective='multiclass:softmax', n_jobs=-1, random_state=100)
-    #model = XGBClassifier(class_weight='balanced', objective='multiclass:softmax', n_jobs=-1, random_state=100)
-    #steps = [('over', over), ('under', under), ('model', model)] # ('o', over), 
-    #pipeline = Pipeline(steps)
+    model = LGBMClassifier(class_weight='balanced', objective='multiclass:softmax', n_jobs=-1, random_state=100, silent=True)
+    steps = [('over', over), ('under', under), ('model', model)] # ('o', over), 
+    pipeline = Pipeline(steps)
     
-    '''
-    with open('best_lightgbm_geovars_10_03_params.pkl', 'rb') as f:
-        params_probar_primero = pickle.load(f)
+    if MODE != 'INDIVIDUAL':
+        params = {'reg_alpha': (1e-3, 5.0, 'log-uniform'),
+          'reg_lambda': (1e-2, 50.0, 'log-uniform'),
+          'n_estimators': (600, 4000),
+          'learning_rate': (5e-3, 1.0, 'log-uniform'),
+          'num_leaves': (25, 70),
+          'boosting_type': ['gbdt', 'goss'],
+          'colsample_bytree': (0.1, 1.0, 'uniform'),
+          'subsample': (0.4, 1.0, 'uniform'),
+          'min_child_samples': (1, 25),
+          'min_child_weight': (1e-6, 0.1, 'log-uniform'),}
+
+        '''
+        ks = [k for k in params.keys()]
+        if 'model__' not in ks[0]:
+            params = {f'model__{k}':v for k, v in params.items()}
+        '''    
+        best_model = BayesSearchCV(
+                    model,
+                    params,
+                    n_iter = N_ITER,
+                    n_points=1,
+                    cv=cv,
+                    scoring=f05_scorer,
+                    random_state=100,
+                    optimizer_kwargs= {'n_initial_points': 20})
     
-    nuevo_dic = {}
-    
-    for k in params_probar_primero.keys():
-        k_ = k.replace('model__', '')
-        nuevo_dic[k_] = params_probar_primero[k]
-    
-    pipeline_prueba = Pipeline([('o', over), 
-                       ('u', under), 
-                       ('model', LGBMClassifier(class_weight='balanced', objective='multiclass:softmax', n_jobs=-1, **nuevo_dic))])
-    
-    pipeline_prueba.fit(X_train, y_train)
-    preds_pipeline_prueba = pipeline_prueba.predict(X_test)
-    print(f"Resultado pipeline prueba: {f1_score(y_test, preds_pipeline_prueba, average='macro')}")
-    #print(f"Score is {pipeline_prueba.score(y_test, X_test)}")
-    '''
-    best_model = BayesSearchCV(
-                model,
-                params,
-                n_iter = N_ITER,
-                n_points=1,
-                cv=cv,
-                scoring='f1_macro',
-                random_state=100,
-                optimizer_kwargs= {'n_initial_points': 20})
 
     def on_step(optim_result):
         score = best_model.best_score_
         results = best_model.cv_results_
-        #preds = best_model.predict(X_test)
         try:
             results_df = pd.DataFrame(results)
             results_df.to_csv(f'results_{NAME}.csv', header=True, index=False)
@@ -322,7 +306,6 @@ def main():
             print('Interrupting!')
             return True
 
-    #print(f'Los nombres de los features son {X.columns}')
     good_colnames = []
     i = 0
     for col in X_train.columns:
@@ -334,32 +317,49 @@ def main():
             good_colnames.append(col)
     X_train.columns = good_colnames
     print('ajustando modelo')
-    best_model.fit(X_train, y_train, callback=[on_step])
-    with open(f'./best_{NAME}_model.pkl', 'wb') as f:
-        pickle.dump(best_model, f)
+    if MODE != 'INDIVIDUAL':
+        best_model.fit(X_train, y_train, callback=[on_step])
+        with open(f'./best_{NAME}_model.pkl', 'wb') as f:
+            pickle.dump(best_model, f)
+        preds = best_model.predict(X_test)
+    else:
+        params = {k.replace('model__', ''):v for k, v in params.items()}
+        best_model = LGBMClassifier(class_weight='balanced', objective='multiclass:softmax', n_jobs=-1, random_state=100, silent=False, **params)
+        
+        print('without pipeline:')
+        best_model.fit(X_train, y_train)
+        with open(f'./best_{NAME}_model.pkl', 'wb') as f:
+            pickle.dump(best_model, f)
+        preds = best_model.predict(X_test)
+        print(f'F1 SCORE IS {f1_score(y_test, preds, average="macro")}')
+
+        print('with pipeline:')
+        steps = [('over', over), ('under', under)] # ('o', over), 
+        pipeline = Pipeline(steps)
+        X_train, y_train = pipeline.fit_resample(X_train, y_train)
+        best_model.fit(X_train, y_train)
+        with open(f'./best_{NAME}_model_with_pipeline.pkl', 'wb') as f:
+            pickle.dump(best_model, f)
+        preds = best_model.predict(X_test)
+        print(f'F1 SCORE WITH PIPELINE IS {f1_score(y_test, preds, average="macro")}')
     print('loggeando movidas')
-    preds = best_model.predict(X_test)
-    preds = encoder.inverse_transform(preds)
-    y_test = encoder.inverse_transform(y_test)
-    #print(f"El score ha sido de {best_model.score(X_test, y_test)}")
-    #mlflow.log_artifact(f'./best_{NAME}_model.pkl')
     mlflow.log_metrics(metrics={'f1': f1_score(y_test, preds, average='macro'),
                            'precision': precision_score(y_test, preds, average='macro'),
                            'recall': recall_score(y_test, preds, average='macro'),
-                           'accuracy': accuracy_score(y_test, preds)})
-    best_params = best_model.best_params_
-    for param in best_params.keys():
-         mlflow.log_param(param, best_params[param])
-    preds = best_model.predict(X_test)
-    preds_proba = best_model.predict_proba(X_test)
+                           'accuracy': accuracy_score(y_test, preds),
+                           'f05': fbeta_score(y_test, preds, beta=0.5, average='macro'),
+                           'f2': fbeta_score(y_test, preds, beta=2, average='macro')})
+    if MODE != 'INDIVIDUAL':
+        best_params = best_model.best_params_
+        for param in best_params.keys():
+            mlflow.log_param(param, best_params[param])
     cm = confusion_matrix(y_test, preds)
     grafico_conf_matrix = print_confusion_matrix(cm, class_names = labs_names)
     grafico_conf_matrix.savefig(NAME)
     grafico_norm = print_confusion_matrix(cm, class_names = labs_names, normalize=False)
     grafico_norm.savefig(f'{NAME}_no_norm')
-    mlflow.log_artifact(f'./{NAME}.png')
-    mlflow.log_artifact(f'./{NAME}_no_norm.png')
-    #mlflow.sklearn.log_model(best_model.best_estimator_, 'random_forest_model')
+    #mlflow.log_artifact(f'./{NAME}.png')
+    #mlflow.log_artifact(f'./{NAME}_no_norm.png')
     mlflow.end_run()
 
 
