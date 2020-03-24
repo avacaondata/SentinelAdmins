@@ -65,7 +65,7 @@ def closest_node(node, nodes):
 
 
 
-def get_lon_lat(df, nombre, ruido=False):
+def get_lon_lat(df, ruido=False):
     '''
     This function receives a geopandas df, and a desired name for the variable
     extracted from that dataframe. It inspects the geometric objects inside the
@@ -117,7 +117,7 @@ def get_lon_lat(df, nombre, ruido=False):
         if o != float("inf") and a != float("inf"):
             latnew.append(a)
             lonnew.append(o)
-    return {nombre: {'lon':lonnew, 'lat':latnew}}
+    return {'lon':lonnew, 'lat':latnew}
 
 
 def get_zpae():
@@ -125,9 +125,9 @@ def get_zpae():
     Returns the corrected geopandas df for ruido.
     '''
     zpae = gpd.read_file('./ZPAE/ZPAE/TODAS_ZPAE_ETRS89.shp')
-    mydic = get_lon_lat(zpae, 'zpae', ruido=True)
-    mydic['zpae']['ruido'] = zpae.ZonaSupera
-    return pd.DataFrame(mydic['zpae'])
+    mydic = get_lon_lat(zpae, ruido=True)
+    mydic['ruido'] = zpae.ZonaSupera
+    return pd.DataFrame(mydic)
 
 
 def get_clusters(nombre):
@@ -173,6 +173,7 @@ def get_madrid_codes(df):
     #df_madrid = df[(df.CODIGO_POSTAL>27000) & (df.CODIGO_POSTAL<29000)]
     return df #df_madrid
 
+
 print("###### abriendo dfs ##########")
 conflictivos = []
 dfs, nombres = get_dfs('./nomecalles2')
@@ -181,7 +182,7 @@ mydic = {}
 print('########### COGIENDO LAT LON ##########')
 for df, nombre in zip(dfs, nombres):
     try:
-        mydic.update(get_lon_lat(df, nombre))
+        mydic[nombre] = get_lon_lat(df)
     except Exception as e:
         print(e)
         conflictivos.append(nombre)
