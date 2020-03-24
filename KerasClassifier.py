@@ -180,7 +180,7 @@ def main():
     model = KerasClassifier(create_mlp_model, verbose = 2)
     steps = [('under', under), ('model', model)]
     pipeline = Pipeline(steps)
-
+    
     mlflow.start_run(run_name=NAME)
 
     best_model = BayesSearchCV(
@@ -231,6 +231,12 @@ def main():
         best_model.fit(X_train.values, y_train, callback=[on_step])
         # with open(f'./best_{NAME}_model.pkl', 'wb') as f:
         #     pickle.dump(best_model, f)
+        model_json = best_model.best_estimator_.to_json()
+        with open("best_model_Keras.json", "w") as json_file:
+            json_file.write(model_json)
+        # serialize weights to HDF5
+        best_model.best_estimator_.save_weights("model.h5")
+        print("Saved model to disk")
         preds = best_model.predict(X_test)
     else:
         params = {k.replace('model__', ''):v for k, v in params.items()}
