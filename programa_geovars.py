@@ -551,7 +551,6 @@ if __name__ == "__main__":
         if len(resp) != len(points):
             resp = np.concatenate(resp)
         train_df[nombre] = resp
-    pool.close()
     """
     We transform the subdicts inside mydic into individual dataframes and put them into a list.
     """
@@ -607,7 +606,7 @@ if __name__ == "__main__":
     """
     train_points = [(lon, lat) for lon, lat in zip(train_df.lon, train_df.lat)]
     train_points_sp = np.array_split(train_points, mp.cpu_count())
-    resp = mp.Pool(mp.cpu_count()).map(get_postal_codes, train_points_sp)
+    resp = pool.map(get_postal_codes, train_points_sp)
     if len(resp) != len(train_points):
         resp = np.concatenate(resp)
     train_df["CODIGO_POSTAL"] = resp
@@ -663,7 +662,7 @@ if __name__ == "__main__":
     print(
         "########### COGIENDO ZONA METROPOLITANA Y EDUCATIVA, ALTITUD Y CALIDAD DEL AIRE ##########"
     )
-    resp = mp.Pool(mp.cpu_count()).map(
+    resp = pool.map(
         get_zona_metropolitana_o_educativa, train_points_sp
     )
     if len(resp) != len(train_points):
@@ -675,32 +674,32 @@ if __name__ == "__main__":
         train_points, mode="educativa"
     )
     """
-    resp = mp.Pool(mp.cpu_count()).map(get_altitude, train_points_sp)
+    resp = pool.map(get_altitude, train_points_sp)
     if len(resp) != len(train_points):
         resp = np.concatenate(resp)
     merged_df["ALTITUD"] = resp
     # merged_df["ALTITUD"] = get_altitude(train_points)
     # merged_df["CALIDAD_AIRE"] = air_quality(train_points)
-    resp = mp.Pool(mp.cpu_count()).map(air_quality, train_points_sp)
+    resp = pool.map(air_quality, train_points_sp)
     if len(resp) != len(train_points):
         resp = np.concatenate(resp)
     merged_df["CALIDAD_AIRE"] = resp
 
-    resp = mp.Pool(mp.cpu_count()).map(
+    resp = pool.map(
         partial(get_distance_to_place, place=m30), train_points_sp
     )
     if len(resp) != len(train_points):
         resp = np.concatenate(resp)
     merged_df["distance_m30"] = resp
 
-    resp = mp.Pool(mp.cpu_count()).map(
+    resp = pool.map(
         partial(get_distance_to_place, place=m40), train_points_sp
     )
     if len(resp) != len(train_points):
         resp = np.concatenate(resp)
     merged_df["distance_m40"] = resp
 
-    resp = mp.Pool(mp.cpu_count()).map(
+    resp = pool.map(
         partial(get_distance_to_place, place=castellana), train_points_sp
     )
     if len(resp) != len(train_points):
@@ -751,7 +750,7 @@ if __name__ == "__main__":
     merged_df["dist_closest_zara_HOME"] = [t[1] for t in tqdm(closest_zhome)]
     '''
     act_empresarial_points_sp = np.array_split(act_empresarial_points, mp.cpu_count())
-    pcodes_empr = mp.Pool(mp.cpu_count()).map(
+    pcodes_empr = pool.map(
         get_postal_codes, act_empresarial_points_sp
     )  # get_postal_codes()
     if len(pcodes_empr) != len(act_empresarial_points):
