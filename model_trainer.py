@@ -38,7 +38,7 @@ from category_encoders.cat_boost import CatBoostEncoder
 from category_encoders.target_encoder import TargetEncoder
 from sklearn.pipeline import Pipeline
 
-NAME = "BAYES_SEARCH_1004"
+NAME = "BAYES_SEARCH_1104"
 N_ITER = 200
 cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=100)
 MODE = "COLLECTIVE"
@@ -341,14 +341,17 @@ def main():
         # X_train = X_train.astype('float')
         # X_test = cat_encoder.transform(X_test)
         # X_test = X_test.astype('float')
-
+    cols_cat = ["ruido", "CODIGO_POSTAL", "ZONA_METROPOLITANA", "CALIDAD_AIRE"]
+    cols_float = [col for col in X_train.columns if col not in cols_cat]
+    X_train[cols_float] = X_train[cols_float].astype("float")
+    X_test[cols_float] = X_test[cols_float].astype("float")
     """
     with open('best_lightgbm_new_vars_armando_params.pkl', 'rb') as f:
         params = pickle.load(f)
     """
     labs_names = [c for c in encoder.classes_]
 
-    '''
+    """
     counter = Counter(y_train)
     maximo = 0
     for k, v in dict(counter).items():
@@ -357,18 +360,18 @@ def main():
             llave = k
         else:
             continue
-    '''
-    #dic_smote = {
+    """
+    # dic_smote = {
     #    k: int(v * 10 * (2 / 3)) for k, v in dict(counter).items() if k != llave
-    #}
+    # }
 
-    #over = SMOTE(sampling_strategy=dic_smote)
+    # over = SMOTE(sampling_strategy=dic_smote)
 
-    #under = RandomUnderSampler(
+    # under = RandomUnderSampler(
     #    sampling_strategy={
     #        k: int(v * 0.95 * (2 / 3)) for k, v in dict(counter).items() if k == llave
     #    }
-    #)
+    # )
 
     """
     cw = list(class_weight.compute_class_weight('balanced',
@@ -385,8 +388,8 @@ def main():
         random_state=100,
         silent=True,
     )
-    #steps = [("over", over), ("under", under), ("model", model)]  # ('o', over),
-    #pipeline = Pipeline(steps)
+    # steps = [("over", over), ("under", under), ("model", model)]  # ('o', over),
+    # pipeline = Pipeline(steps)
 
     if MODE != "INDIVIDUAL":
         params = {
@@ -404,8 +407,11 @@ def main():
 
         params = {f"model__{k}": v for k, v in params.items()}
         params = dict(
-            params, **{"clas_encoder__a": (1.0, 100.0, "log-uniform"),
-                       "clas_encoder__sigma": (0.01, 10.0, "log-uniform")}
+            params,
+            **{
+                "clas_encoder__a": (1.0, 100.0, "log-uniform"),
+                "clas_encoder__sigma": (0.01, 10.0, "log-uniform"),
+            },
         )
         print(params)
 
@@ -416,7 +422,7 @@ def main():
         """
 
         pipeline = Pipeline(
-            steps=[("clas_encoder", CatBoostEncoder()), ("model", model)]
+            steps=[("clas_encoder", CatBoostEncoder(cols=cols_cat)), ("model", model)]
         )
 
         best_model = BayesSearchCV(

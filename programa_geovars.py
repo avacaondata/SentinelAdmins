@@ -61,9 +61,6 @@ aire.geometry = [
 ]
 
 
-###### TODO ##############
-
-
 def get_points_density(df, around=5):
     """
     Function to get the points density some kilometers around.
@@ -161,7 +158,38 @@ def air_quality(points):
     return qualities
 
 
-###########################
+###### TODO ##############
+#### REHACER TODA LA PARTE DE PUNTOS DE INTERÉS CON ÁREA AL REDEDOR EN LUGAR DE CON EL CODIGO POSTAL
+#### AÑADIR ESTADÍSTICAS DE LOS "VECINOS".
+
+
+def get_close_interest_points(points, var, around=2):
+    grad_to_lat = 1 / 111
+    grad_to_lon = 1 / 85
+    lons = [p[0] for p in points]
+    lats = [p[1] for p in points]
+    min_lons = [lon - around * grad_to_lon for lon in lons]
+    max_lons = [lon + around * grad_to_lon for lon in lons]
+    min_lats = [lat - around * grad_to_lat for lat in lats]
+    max_lats = [lat + around * grad_to_lat for lat in lats]
+    df = pd.DataFrame({'lon': mydic[var]['lon'], 'lat': mydic[var]['lat']})
+    points_around = np.empty((len(points),), dtype='float64')
+    i = 0
+    for min_lon, max_lon, min_lat, max_lat in tqdm(zip(
+        min_lons, max_lons, min_lats, max_lats
+    ), desc=f'### GETTING POINTS FOR {var}'):
+        mybool = (
+            (df["lat"] >= min_lat)
+            & (df["lat"] <= max_lat)
+            & (df["lon"] >= min_lon)
+            & (df["lon"] <= max_lon)
+        )
+        try:
+            points_around[i] = df.loc[mybool, :].shape[0]
+        except:
+            points_around[i] = 0
+        i += 1
+    return points_around
 
 
 def get_zona_metropolitana_o_educativa(points, mode="metropolitana"):
@@ -439,6 +467,7 @@ if __name__ == "__main__":
             print(e)
             conflictivos.append(nombre)
             continue
+    
     """
     In this section we take the total area covered by each postal code.
     """
@@ -479,6 +508,8 @@ if __name__ == "__main__":
     With get_suma_var we take the number of elements of a feature 
     (subway stations, university campus...) that exist inside each postal code.
     """
+
+    '''
     for nombre in tqdm(nombres):
         try:
             pts = [
@@ -506,9 +537,26 @@ if __name__ == "__main__":
             print(e)
             print(mydic[nombre])
             conflictivos.append(nombre)
+    '''
+
+    points = [
+        [l for l in train_df[["lon", "lat"]].iloc[ii]]
+        for ii in tqdm(range(train_df.shape[0]))
+    ]
+
+    points_sp = np.array_split(points, mp.cpu_count())
+    pool = mp.Pool(processes=mp.cpu_count())
+    for nombre in tqdm(nombres):
+        resp = pool.map(partial(get_close_interest_points,var=nombre), points_sp)
+        if len(resp) != len(points):
+            resp = np.concatenate(resp)
+        train_df[nombre] = resp
+    pool.close()
     """
     We transform the subdicts inside mydic into individual dataframes and put them into a list.
     """
+
+    '''
     print("########### INDIVIDUAL DFS ###########")
     processed_dfs = []
     for nombre in tqdm(nombres):
@@ -517,7 +565,9 @@ if __name__ == "__main__":
         except Exception as e:
             print(mydic[nombre])
             conflictivos.append(nombre)
+    '''
     print("########## AÑADIENDO VARIABLE DE RUIDO ##############")
+    
     """
     In this part we get the ZPAE variables, which are the variables representing how much noise
     was reported (no date available) in different parts in Madrid. For that, we get the lon lat points
@@ -529,10 +579,7 @@ if __name__ == "__main__":
     variable). The distance to the closest noise is also a new feature for the dataset.
     """
     zpae = get_zpae()
-    points = [
-        [l for l in train_df[["lon", "lat"]].iloc[ii]]
-        for ii in tqdm(range(train_df.shape[0]))
-    ]
+    
     comparing_points = [
         [l for l in zpae[["lon", "lat"]].iloc[ii]] for ii in tqdm(range(zpae.shape[0]))
     ]
@@ -564,13 +611,16 @@ if __name__ == "__main__":
     if len(resp) != len(train_points):
         resp = np.concatenate(resp)
     train_df["CODIGO_POSTAL"] = resp
+    '''
     df_final = reduce(
         lambda left, right: pd.merge(
             left, right, on="CODIGO_POSTAL", how="outer", sort=True
         ),
         processed_dfs,
     )
+    
     df_final.fillna(0, inplace=True)
+    '''
     clusters_orig = kmeans.predict(
         pd.DataFrame({"x": [l for l in lat_scaled], "y": [l for l in lon_scaled]})
     )
@@ -583,14 +633,16 @@ if __name__ == "__main__":
         distances_to_centroids[i] = distances[i, train_df["cluster"].iloc[i]]
         # )  # se podría hacer un np.min(..., axis=1) y debería salir igual, pero no se nota tanto el coste (unos segundos), y así nos aseguramos.
     train_df["distance_to_centroid"] = distances_to_centroids
-
+    merged_df = train_df.copy()
+    '''
     print(
         f"##################### Codigos Postales Unicos: \n train df {train_df.CODIGO_POSTAL.unique()}\
            and \n {df_final.CODIGO_POSTAL.unique()}; lens: {len(train_df.CODIGO_POSTAL.unique())}\
            and {len(df_final.CODIGO_POSTAL.unique())}"
     )
-
+    
     merged_df = pd.merge(train_df, df_final, on="CODIGO_POSTAL", how="inner")
+    '''
     ############# INCLUYENDO AREA POR CODIGO POSTAL ########################
     areas_postal_codes.CODIGO_POSTAL = areas_postal_codes.CODIGO_POSTAL.astype("float")
     merged_df.CODIGO_POSTAL = merged_df.CODIGO_POSTAL.astype("float")
@@ -697,6 +749,7 @@ if __name__ == "__main__":
     merged_df["dist_closest_zara"] = [t[1] for t in tqdm(closest_zara)]
     closest_zhome = [closest_node(point, zara_home_pts) for point in tqdm(train_points)]
     merged_df["dist_closest_zara_HOME"] = [t[1] for t in tqdm(closest_zhome)]
+    '''
     act_empresarial_points_sp = np.array_split(act_empresarial_points, mp.cpu_count())
     pcodes_empr = mp.Pool(mp.cpu_count()).map(
         get_postal_codes, act_empresarial_points_sp
@@ -725,7 +778,7 @@ if __name__ == "__main__":
     ]
     merged_df[cols_imputar_empresas] = merged_df[cols_imputar_empresas].fillna(value=0)
     print(f"***** TRAS SACAR CODR28 EL SHAPE ES DE {merged_df.shape} ********")
-
+    '''
     print("###### SACANDO VARIABLES ARMANDO #####")
     """
     As variables_armando was obtained with Excel and the Internet, this dataframe already comes with the 
@@ -744,10 +797,10 @@ if __name__ == "__main__":
     print(
         f"########## FALTAN LOS SIGUIENTES CODIGOS POSTALES: {cods_postales_faltan} ##################"
     )
-    merged_df.loc[merged_df.CODIGO_POSTAL == 28907.0,'CODIGO_POSTAL'] = 28903
+    merged_df.loc[merged_df.CODIGO_POSTAL == 28907.0, "CODIGO_POSTAL"] = 28903
     merged_df2 = pd.merge(merged_df, variables_armando, on="CODIGO_POSTAL", how="left")
     print(f"En el momento 6 el shape es de {merged_df2.shape}")
-    merged_df2.drop("contadores_dir2019a.shp", axis=1, inplace=True)
+    #merged_df2.drop("contadores_dir2019a.shp", axis=1, inplace=True)
     merged_df2.to_csv("TOTAL_TRAIN.csv", header=True, index=False)  # TOTAL_TRAIN.csv
     print(f"NAs in final DF is {merged_df2.isna().sum()}")
     print("********** Finalizado ***********")
