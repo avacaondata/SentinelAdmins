@@ -199,8 +199,6 @@ def save_obj(obj, name):
 
 
 def get_vegetation_indices_deciles(df):
-    
-
     sc = MinMaxScaler()
     qs = [f"_0_{i}" for i in range(10)] + ["_1_0"]
     qs = [q for q in qs if q != "_0_5"]
@@ -379,7 +377,7 @@ def solve_cols_conflictivas(X):
 
 
 def create_geovars(X):
-    cols_geoms = [col for col in X.columns if "GEOM" in col]
+    cols_geoms = ['GEOM_R1', 'GEOM_R2', 'GEOM_R3', 'GEOM_R4']
     for col in tqdm(cols_geoms):
         otras = [c for c in cols_geoms if c != col]
         for otracol in otras:
@@ -535,7 +533,7 @@ def preprocess_data(
     X.drop(["lon", "lat"], axis=1, inplace=True)
     # "lon", "lat"
     ########### suma geoms #######################
-    X["suma_geoms"] = X[[col for col in X.columns if "GEOM_" in col]].sum(axis=1)
+    #X["suma_geoms"] = X[[col for col in X.columns if "GEOM_" in col]].sum(axis=1)
     ########### HERE WE DEAL WITH GEOM VARS AND CREATE NEW GEOM VARS ############
     # X = get_pca_geoms(X)
     # comp_geoms = get_pca_geoms(X)
@@ -586,6 +584,7 @@ def preprocess_data(
             X[:, select_columns] = stdscaler.fit_transform(X[:, select_columns])
             X = pd.DataFrame(X, columns=colnames)
             X["population_density"] = X["poblacion_cp"] / X["area_cod_postal"]
+            X[select_columns] = X[select_columns].astype('float')
             with open("SCALER.pkl", "wb") as f:
                 pickle.dump(stdscaler, f)
         elif scaler == "minmax":
