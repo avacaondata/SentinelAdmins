@@ -157,7 +157,7 @@ if __name__ == "__main__":
 
     if not args.use_old:
         print("procesando los datos")
-        X, y, encoder = preprocess_data("TOTAL_TRAIN.csv", process_cat=True)
+        X, y, encoder = preprocess_data("TOTAL_TRAIN.csv", process_cat=True, use_pickled_X = True)
         X = X.astype("float")
         print(X.shape)
 

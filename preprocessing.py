@@ -59,12 +59,12 @@ def fill_cods_nas(df):
     cols_rellenar = [col for col in cols_rellenar if col in vars_postal_code.columns]
     especiales = ["p_solteros", "p_casados", "p_viudos", "p_separados", "p_divorciados"]
     # cols_rellenar1 = [col for col in cols_rellenar if col not in especiales]
-    inds = (pd.isnull(df[cols_rellenar]).any(1)) & (df.CODIGO_POSTAL == 28907)
+    inds = (pd.isnull(df[cols_rellenar]).any(1)) & (df.CODIGO_POSTAL == '28907')
     df.loc[inds, cols_rellenar] = vars_postal_code.loc[
-        vars_postal_code.CODIGO_POSTAL == 28903, cols_rellenar
+        vars_postal_code.CODIGO_POSTAL == '28903', cols_rellenar
     ].values
-    df.loc[df.CODIGO_POSTAL == 28524, especiales] = vars_postal_code.loc[
-        vars_postal_code.CODIGO_POSTAL == 28522, especiales
+    df.loc[df.CODIGO_POSTAL == '28524', especiales] = vars_postal_code.loc[
+        vars_postal_code.CODIGO_POSTAL == '28522', especiales
     ].values
     return df
 
@@ -441,7 +441,7 @@ def transform_types_str(X):
 
 
 def preprocess_data(
-    f, scale=True, scaler="std", process_cat=True, y_name="CLASE", sample_trials=None
+    f, scale=True, scaler="std", process_cat=True, y_name="CLASE", sample_trials=None, use_pickled_X = False
 ):
     """
     takes a file name and returns the processed dataset
@@ -473,89 +473,90 @@ def preprocess_data(
         df = df.sample(sample_trials)
     encoder.fit(df.CLASE.values)
     y = encoder.transform(df.CLASE.values)
-    X = df.drop(["CLASE", "ID", "cluster"], axis=1)
-    print(f"Valores unicos de CADASTRAL--- {X.CADASTRALQUALITYID.unique()}")
-    X = solve_cols_conflictivas(X)
-    X = transform_types_str(X)
-    ########### color variables ##################
-    print("##### GETTING COLOR VARIABLES ##########")
-    X = get_mean_color(X)
-    X = get_vegetation_indices(X)
-    X = get_vegetation_indices_deciles(X)
-    cols_color = [col for col in X.columns if "Q_" in col]
-    comp = get_pca_colors(X, cols_color)
-    X["PCA1"] = comp[:, 0]
-    X["PCA2"] = comp[:, 1]
-    X["PCA3"] = comp[:, 2]
-    X = get_yuv(X)
-    ########### NEIGHBORS VARIABLES ##################
-    vars_veget = [
-        "GRVI",
-        "MGRVI",
-        "RGBVI",
-        "ExG",
-        "ExGR",
-        "NDVI",
-        "SAVI",
-        "MSAVI",
-        "GNDVI",
-        "OSAVI",
-        "GCI",
-        "BAI",
-        "NDWI",
-    ]
-    vars_color = ["media_R", "media_G", "media_B", "media_NIR"]
-    vars_pca = [f"PCA{i}" for i in range(1, 4)]
-    vars_yuv = ["Y_YUV_0_5", "U_YUV_0_5", "V_YUV_0_5"]
-    vars_neigh = [
-        col
-        for col in X.columns
-        if "MAXBUILDINGFLOOR" in col
-        or "GEOM_" in col
-        or col in vars_veget
-        or col in vars_color
-        or col == "AREA"
-        or col in vars_pca
-        or col in vars_yuv
-    ]
-
-    points = [(lon, lat) for lon, lat in zip(X["lon"], X["lat"])]
-    points_sp = np.array_split(points, mp.cpu_count())
-    pool = mp.Pool(mp.cpu_count())
-    for var in tqdm(vars_neigh, desc="VARS NEIGH"):
-        resp = pool.map(partial(get_neighbors_means, var=var, X=X), points_sp)
-        if len(resp) != len(points):
-            resp = np.concatenate(resp)
-        X[f"NEIGHBORS_{var}"] = X[var].values - resp
-        X[f"NEIGHBORS_{var}"] = X[f"NEIGHBORS_{var}"].astype("float64")
-        X[f"NEIGHBORS_{var}"].fillna(value=0, inplace=True)
-    pool.close()
-    X.drop(["lon", "lat"], axis=1, inplace=True)
-    # "lon", "lat"
-    ########### suma geoms #######################
-    #X["suma_geoms"] = X[[col for col in X.columns if "GEOM_" in col]].sum(axis=1)
-    ########### HERE WE DEAL WITH GEOM VARS AND CREATE NEW GEOM VARS ############
-    # X = get_pca_geoms(X)
-    # comp_geoms = get_pca_geoms(X)
-    # X['PCA1_GEOM'] = comp_geoms[:, 0]
-    X = create_geovars(X)
-    X = process_cadqual(X)
-    print(f"En momento 2 el shape es de {X.shape}")
-    ##########
-    if process_cat:
-        X = pd.get_dummies(X, columns=X.columns[X.dtypes == object])
-    print(f"En momento 3 el shape es de {X.shape}")
-
-    cols = X.columns
-
-    X = fill_cods_nas(X)
-    X = fix_renta_media_por_hogar(X)
-    print(f"Las columnas que tienen dtype object son {X.columns[X.dtypes == object]}")
-    X = fix_nas_categorical(X)
-    X[X == np.inf] = np.nan
-    X[X == -np.inf] = np.nan
-    with open("X_analizar.pkl", "wb") as f:
-        pickle.dump(X, f)
+    if not(use_pickled_X):
+        X = df.drop(["CLASE", "ID", "cluster"], axis=1)
+        print(f"Valores unicos de CADASTRAL--- {X.CADASTRALQUALITYID.unique()}")
+        X = solve_cols_conflictivas(X)
+        X = transform_types_str(X)
+        ########### color variables ##################
+        print("##### GETTING COLOR VARIABLES ##########")
+        X = get_mean_color(X)
+        X = get_vegetation_indices(X)
+        X = get_vegetation_indices_deciles(X)
+        cols_color = [col for col in X.columns if "Q_" in col]
+        comp = get_pca_colors(X, cols_color)
+        X["PCA1"] = comp[:, 0]
+        X["PCA2"] = comp[:, 1]
+        X["PCA3"] = comp[:, 2]
+        X = get_yuv(X)
+        ########### NEIGHBORS VARIABLES ##################
+        vars_veget = [
+            "GRVI",
+            "MGRVI",
+            "RGBVI",
+            "ExG",
+            "ExGR",
+            "NDVI",
+            "SAVI",
+            "MSAVI",
+            "GNDVI",
+            "OSAVI",
+            "GCI",
+            "BAI",
+            "NDWI",
+        ]
+        vars_color = ["media_R", "media_G", "media_B", "media_NIR"]
+        vars_pca = [f"PCA{i}" for i in range(1, 4)]
+        vars_yuv = ["Y_YUV_0_5", "U_YUV_0_5", "V_YUV_0_5"]
+        vars_neigh = [
+            col
+            for col in X.columns
+            if "MAXBUILDINGFLOOR" in col
+            or "GEOM_" in col
+            or col in vars_veget
+            or col in vars_color
+            or col == "AREA"
+            or col in vars_pca
+            or col in vars_yuv
+        ]
+        points = [(lon, lat) for lon, lat in zip(X["lon"], X["lat"])]
+        points_sp = np.array_split(points, mp.cpu_count())
+        pool = mp.Pool(mp.cpu_count())
+        for var in tqdm(vars_neigh, desc="VARS NEIGH"):
+            resp = pool.map(partial(get_neighbors_means, var=var, X=X), points_sp)
+            if len(resp) != len(points):
+                resp = np.concatenate(resp)
+            X[f"NEIGHBORS_{var}"] = X[var].values - resp
+            X[f"NEIGHBORS_{var}"] = X[f"NEIGHBORS_{var}"].astype("float64")
+            X[f"NEIGHBORS_{var}"].fillna(value=0, inplace=True)
+        pool.close()
+        X.drop(["lon", "lat"], axis=1, inplace=True)
+        # "lon", "lat"
+        ########### suma geoms #######################
+        #X["suma_geoms"] = X[[col for col in X.columns if "GEOM_" in col]].sum(axis=1)
+        ########### HERE WE DEAL WITH GEOM VARS AND CREATE NEW GEOM VARS ############
+        # X = get_pca_geoms(X)
+        # comp_geoms = get_pca_geoms(X)
+        # X['PCA1_GEOM'] = comp_geoms[:, 0]
+        X = create_geovars(X)
+        X = process_cadqual(X)
+        print(f"En momento 2 el shape es de {X.shape}")
+        ##########
+        cols = X.columns
+        X = fill_cods_nas(X)
+        X = fix_renta_media_por_hogar(X)
+        print(f"Las columnas que tienen dtype object son {X.columns[X.dtypes == object]}")
+        X = fix_nas_categorical(X)
+        X[X == np.inf] = np.nan
+        X[X == -np.inf] = np.nan
+        if process_cat:
+            X = pd.get_dummies(X, columns=X.columns[X.dtypes == object])
+        print(f"En momento 3 el shape es de {X.shape}")
+        with open("X_analizar.pkl", "wb") as f:
+            pickle.dump(X, f)
+    else:
+        X = pickle.load(open('X_analizar.pkl', 'rb'))
+    
     print("Imputando valores con Random Forest")
 
     # imputer.fit(X.loc[:, X.columns[X.dtypes != object]])
@@ -576,15 +577,15 @@ def preprocess_data(
     ########## HERE I TREAT LAT AND LON ########################
     X = geospatial_vars(X)
     print(f"En momento 5 el shape es de {X.shape}")
-    select_columns = X.dtypes != object
+    select_columns = list(X.dtypes != object)
     colnames = X.columns
     X = np.array(X)
     if scale:
         if scaler == "std":
             X[:, select_columns] = stdscaler.fit_transform(X[:, select_columns])
             X = pd.DataFrame(X, columns=colnames)
+            X.loc[:, select_columns] = X.loc[:,select_columns].astype('float')
             X["population_density"] = X["poblacion_cp"] / X["area_cod_postal"]
-            X[select_columns] = X[select_columns].astype('float')
             with open("SCALER.pkl", "wb") as f:
                 pickle.dump(stdscaler, f)
         elif scaler == "minmax":
