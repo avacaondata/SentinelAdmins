@@ -35,11 +35,18 @@ Dependiendo de la máquina tardará un tiempo u otro, pues está programado para
 nohup python -u 02-programa_geovars.py > log_programa_geovars.txt &
 ```
 
+Estos dos programas nos facilitan el proceso que se puede ver en el siguiente diagrama:
+
+![Feature Generation](./img/feature_generation.png)
+
 3. Para sacar las predicciones sobre el fichero de test:
 
 ```bash
 nohup python -u 03-sacar_test_stacking.py > log_sacar_test.txt &
 ```
+
+En este tercer paso va incluido, "under the hood", el proceso de feature engineering, que se puede apreciar [en la siguiente imagen](./img/feature_engineering.png)
+
 
 ## Jugar con el código: entrenar otros modelos, hacer experimentos o pruebas, etc.
 
@@ -54,3 +61,5 @@ Para entrenar modelos simples, y no de stacking, uno puede usar model_trainer_re
 ```bash
 nohup python -u model_trainer_refactor.py --model LGBM --name LGBM_01 --use_old False  --iter 100 > log_train_model.txt &
 ```
+
+Con estos programas se puede emular el sistema de modelización final que está resumido [en esta figura](./img/modelizacion.png)
