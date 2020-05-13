@@ -1,0 +1,32 @@
+name: sentinel_env
+channels:
+  - defaults
+  - conda-forge
+  - pytorch
+dependencies:
+  - python=3.7
+  - cudatoolkit
+  - cudnn=7.6.5
+  - jupyter=1.0.0
+  - nb_conda=2.2.1
+  - scikit-learn=0.22.2
+  - pip=19.2.3
+  - pytorch=1.4.0
+  - tqdm=4.36.1
+  - scikit-optimize
+  - lightgbm
+  - catboost 
+  - matplotlib
+  - seaborn
+  - pip
+  - geopandas
+  - category_encoders
+  - pyproj
+  - shap
+  - eli5
+  - pip:
+    - mlflow
+    - xgboost
+    - imbalanced-learn
+    - missingpy
+    - rdflib

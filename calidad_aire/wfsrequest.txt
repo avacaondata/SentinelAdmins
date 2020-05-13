@@ -1,0 +1,1 @@
+https://idem.madrid.org:443/geoidem/CondicionesAtmosfericas/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=CondicionesAtmosfericas:SIGI_MA_ZONAS_CALIDAD_AIRE&outputFormat=SHAPE-ZIP

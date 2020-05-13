@@ -1,0 +1,14 @@
+Agencia Tributaria
+	
+Fuente de Datos: Agencia Estatal de Administración Tributaria
+http://www.aeat.es/wps/portal/Delegaciones?channel=212916d62d5c2010VgnVCM100000d7005a80____&ver=L&site=56d8237c0bc1ff00VgnVCM100000d7005a80____&idioma=es_ES&menu=1&img=8
+
+Georreferenciado por el Instituto de Estadística de la Comunidad de Madrid.
+
+Fecha última actualización: abril 2019
+
+
+Aviso legal:
+El Instituto de Estadística de la Comunidad de Madrid no se responsabiliza de las omisiones, imprecisiones o errores que pudiesen producirse en algún momento en la cartografía y los datos aquí facilitados, ni de las consecuencias que puedan originarse por su utilización. La información que se ofrece por este medio se hace únicamente a título informativo, reservándose el Instituto de Estadística el derecho de suspender su difusión total o parcialmente, y de modificar la estructura y contenido de esta aplicación sin aviso previo.
+El Instituto de Estadística no se responsabiliza de cualquier daño o perjuicio en el software o hardware del usuario que pudiera derivarse del acceso a esta aplicación o del uso de información aquí contenida.
+El Instituto de Estadística facilita la consulta libre y gratuita de esta información, incluyendo la realización de copias en papel, ficheros u otros dispositivos de almacenamiento para usos internos. También se permite la copia y distribución de páginas y mapas siempre que se cite la fuente, no se manipulen ni alteren los contenidos y no se utilicen directamente con fines comerciales. 

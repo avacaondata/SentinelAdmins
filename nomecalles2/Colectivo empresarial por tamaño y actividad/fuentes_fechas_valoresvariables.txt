@@ -1,0 +1,78 @@
+Unidades productivas de 3 y más trabajadores por estrato de empleo y rama de actividad.
+
+Fuente:
+Colectivo Empresarial 2019. Avance.
+Instituto de Estadística de la Comunidad de Madrid
+
+Fecha:
+Fecha de referencia 1 de enero de 2019
+
+Georreferenciado por el Instituto de Estadística de la Comunidad de Madrid.
+
+Notas metodológicas, tabulaciones personalizadas on-line, tablas y mapas en:
+http://www.madrid.org/iestadis/fijas/estructu/economicas/ocupacion/estructucolectivo.htm
+
+
+Descripción:Estratos de empleo
+Longitud:2
+Número de valores: 5
+
+CODIGO 	DESCRIPCION
+02 	De 3 a 9 ocupados
+03 	De 10 a 49 ocupados
+04 	De 50 a 99 ocupados
+05 	De 100 a 249 ocupados
+06 	250 y más ocupados 
+
+
+
+
+Descripción:Ramas de actividad CNAE 09 (R-28)
+Longitud:2
+Número de valores:28
+
+CODIGO 	DESCRIPCION
+
+01	Agricultura, ganadería, caza, selvicultura y pesca
+02	Minería, electricidad y agua
+03	Industria de la alimentación, bebidas y tabaco
+04	Industria textil, de la confección, cuero y calzado 
+05	Metálicas básicas e intermedias
+06	Construcción de maquinaria y equipo mecánico
+07	Construcción de maquinaria y equipo electrico, electrónico y óptico
+08	Fabricación de material de transporte
+09	Industria del papel y artes gráficas
+10	Industria química, coquerias y refino de petroleo
+11	Fabricación de otros productos minerales no metálicos  
+12	Industria de la madera, el caucho y otras industrias manufactureras
+13	Construcción
+14	Comercio mayorista e intermediarios del comercio (exc. vehículos) 
+15	Comercio minorista y comercio y reparación de vehículos
+16	Hostelería
+17	Transporte y almacenamiento
+18	Información y comunicaciones
+19	Actividades Inmobiliarias
+20	Actividades profesionales, científicas y técnicas
+21	Actividades administrativas y servicios auxiliares
+22	Actividades financieras y de seguros
+23	Admón publica, defensa, seguridad social y organismos extraterritoriales
+24	Educación
+25	Actividades sanitarias y de servicios sociales
+26	Actividades artísticas, recreativas y de entretenimiento
+27	Reparación y otros servicios personales
+28	Actividades asociativas y de los hogares
+
+
+Aviso legal:
+
+El Instituto de Estadística de la Comunidad de Madrid no se responsabiliza de las omisiones, imprecisiones o errores que pudiesen producirse en algún 
+momento en la cartografía y los datos aquí facilitados, ni de las consecuencias que puedan originarse por su utilización. La información que se ofrece 
+por este medio se hace únicamente a título informativo, reservándose el Instituto de Estadística el derecho de suspender su difusión total o parcialmente, 
+y de modificar la estructura y contenido de esta aplicación sin aviso previo.
+
+El Instituto de Estadística no se responsabiliza de cualquier daño o perjuicio en el software o hardware del usuario que pudiera derivarse del acceso a 
+esta aplicación o del uso de información aquí contenida.
+
+El Instituto de Estadística facilita la consulta libre y gratuita de esta información, incluyendo la realización de copias en papel, ficheros u otros 
+dispositivos de almacenamiento para usos internos. También se permite la copia y distribución de páginas y mapas siempre que se cite la fuente, no se 
+manipulen ni alteren los contenidos y no se utilicen directamente con fines comerciales. 
