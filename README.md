@@ -41,10 +41,13 @@ nohup python -u 02-programa_geovars.py > log_programa_geovars.txt &
 nohup python -u 03-sacar_test_stacking.py > log_sacar_test.txt &
 ```
 
-## Jugar con nuestro código: entrenar otros modelos, hacer experimentos o pruebas, etc.
+## Jugar con el código: entrenar otros modelos, hacer experimentos o pruebas, etc.
 
 En caso de que se quieran entrenar otros modelos o realizar pruebas, disponemos de muchos scripts para hacerlo. Imaginemos por ejemplo que queremos ver qué tal lo hace una de las arquitecturas de Stacking que tenemos en models.py, por ejemplo StackingAlex1. En tal caso, el comando de entrenamiento sería el siguiente.  
 
 ```bash
 nohup python -u train_stacking.py --model StackingAlex1 --name Experiment_01 --final_model LGBM --cv 3 --encoder CatBoost > log_sacar_test.txt &
 ```
+
+Para entrenar modelos simples, y no de stacking, uno puede usar model_trainer_refactor.py, de la siguiente forma:
+
