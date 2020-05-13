@@ -5,6 +5,8 @@ Código y programas utilizados para ganar el Cajamar UniversityHack 2020, reto M
 
 ## Uso Típico: Sacar predicciones de test sin re-entrenar modelos
 
+### Ejecución en Linux
+
 Para usar el código: crear entorno y activarlo.
 ```bash
 conda env create -f environment.yaml
