@@ -31,7 +31,7 @@ Rscript 01-InterpolacionLatLon.R
 python 02-programa_geovars.py
 ```
 
-Dependiendo de la máquina tardará un tiempo u otro, pues está programado para utilizar todos los cores disponibles, por lo que de disponer de pocas cpus el tiempo de cálculo será mayor. En caso de necesitar dejar este programa corriendo en background, ejecutar:
+Dependiendo de la máquina, este proceso tardará un tiempo. Recomendamos, en caso de necesitar dejar este programa corriendo en background, ejecutarlo con el siguiente formato:
 
 ```bash
 nohup python -u 02-programa_geovars.py > log_programa_geovars.txt &
