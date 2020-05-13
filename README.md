@@ -44,7 +44,7 @@ Estos dos programas nos facilitan el proceso que se puede ver en el siguiente di
 3. Para sacar las predicciones sobre el fichero de test:
 
 ```bash
-nohup python -u 03-sacar_test_stacking.py > log_sacar_test.txt &
+python -u 03-sacar_test_stacking.py
 ```
 
 En este tercer paso va incluido, "under the hood", el proceso de feature engineering, que se puede apreciar
@@ -56,13 +56,13 @@ En este tercer paso va incluido, "under the hood", el proceso de feature enginee
 En caso de que se quieran entrenar otros modelos o realizar pruebas, disponemos de muchos scripts para hacerlo. Imaginemos por ejemplo que queremos ver qué tal lo hace una de las arquitecturas de Stacking que tenemos en models.py, por ejemplo StackingAlex1. En tal caso, el comando de entrenamiento sería el siguiente.  
 
 ```bash
-nohup python -u train_stacking.py --model StackingAlex1 --name Experiment_01 --final_model LGBM --cv 3 --encoder CatBoost > log_train_stacking.txt &
+python -u train_stacking.py --model StackingAlex1 --name Experiment_01 --final_model LGBM --cv 3 --encoder CatBoost
 ```
 
 Para entrenar modelos simples, y no de stacking, uno puede usar model_trainer_refactor.py, de la siguiente forma:
 
 ```bash
-nohup python -u model_trainer_refactor.py --model LGBM --name LGBM_01 --use_old False  --iter 100 > log_train_model.txt &
+python -u model_trainer_refactor.py --model LGBM --name LGBM_01 --use_old False --iter 100
 ```
 
 Con estos programas se puede emular el sistema de modelización final que está resumido ![en esta figura](modelizacion.png)
