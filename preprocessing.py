@@ -174,6 +174,28 @@ def three_dim_space(lat, lon):
     z = np.sin(lat)
     return x, y, z
 
+def geospatial_vars(X):
+    geo_x, geo_y, geo_z = three_dim_space(X.X, X.Y)
+    X["GEO_X"] = geo_x
+    X["GEO_Y"] = geo_y
+    X["GEO_Z"] = geo_z
+    points = [(x, y) for x, y in zip(X.X, X.Y)]
+    origin = (X.X.mean(), X.Y.mean())
+    rotated90 = rotate(points, origin, degrees=90)
+    rotated180 = rotate(points, origin, degrees=180)
+    x_rot_90 = [r[0] for r in rotated90]
+    y_rot_90 = [r[1] for r in rotated90]
+    x_rot_180 = [r[0] for r in rotated180]
+    y_rot_180 = [r[1] for r in rotated180]
+    X["x_rot_90"] = x_rot_90
+    X["y_rot_90"] = y_rot_90
+    X["x_rot_180"] = x_rot_180
+    X["y_rot_180"] = y_rot_180
+    X["lat_2"] = X.X ** 2
+    X["lon_2"] = X.Y ** 2
+    X["latxlon"] = X.X * X.Y
+    return X
+
 
 def get_mean_color(df):
     colores = ["R", "G", "B", "NIR"]
@@ -459,29 +481,6 @@ def fix_nas_categorical(X):
     for col in X.columns[X.dtypes == object]:
         if sum(X[col].isna()) != 0:
             X.loc[X[col].isna(), col] = f"{col}_Ausente"
-    return X
-
-
-def geospatial_vars(X):
-    geo_x, geo_y, geo_z = three_dim_space(X.X, X.Y)
-    X["GEO_X"] = geo_x
-    X["GEO_Y"] = geo_y
-    X["GEO_Z"] = geo_z
-    points = [(x, y) for x, y in zip(X.X, X.Y)]
-    origin = (X.X.mean(), X.Y.mean())
-    rotated90 = rotate(points, origin, degrees=90)
-    rotated180 = rotate(points, origin, degrees=180)
-    x_rot_90 = [r[0] for r in rotated90]
-    y_rot_90 = [r[1] for r in rotated90]
-    x_rot_180 = [r[0] for r in rotated180]
-    y_rot_180 = [r[1] for r in rotated180]
-    X["x_rot_90"] = x_rot_90
-    X["y_rot_90"] = y_rot_90
-    X["x_rot_180"] = x_rot_180
-    X["y_rot_180"] = y_rot_180
-    X["lat_2"] = X.X ** 2
-    X["lon_2"] = X.Y ** 2
-    X["latxlon"] = X.X * X.Y
     return X
 
 
